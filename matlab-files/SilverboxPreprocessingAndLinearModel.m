@@ -17,7 +17,8 @@ fs = 1e7/2^14;              % Sampling frequency = ca. 610 Hz
 
 % The first part in the data is from a Gaussian input with increasing rms
 % value. This part of the data is used as test data.
-Ntest = 40700;   % Number of samples in test set
+Nzeros = 100;    % Number of zeros at the start of the data set
+Ntest = 40400;   % Number of samples in test set
 
 % The second part in the data is from 10 multisine realizations with
 % 8192 samples per realization and 500 transient samples before each
@@ -25,8 +26,10 @@ Ntest = 40700;   % Number of samples in test set
 % data. The last realization is used as validation data (to do e.g. model
 % order selection).
 lines = 2:2:2680;   % Excited frequency lines (odd multisine)
-Ntrans = 500;       % Number of transient samples before each realization
+NtransBefore = 460; % Number of transient samples before each realization
 N = 8192;           % Number of samples per realization
+NtransAfter = 40;   % Number of transient samples after each realization
+Ntrans = NtransBefore + NtransAfter;
 R = 9;              % Number of multisine realizations in estimation set
 Rval = 10 - R;      % Number of multisine realizations in validation set
 
@@ -34,7 +37,7 @@ Rval = 10 - R;      % Number of multisine realizations in validation set
 u = zeros(N,R); % Preallocate
 y = zeros(N,R); % Preallocate
 for r = 0:R-1   % Loop over realizations
-    Nstart = Ntest + r*(N+Ntrans);  % Starting sample realization r+1
+    Nstart = Nzeros+Ntest + NtransBefore + r*(N+Ntrans);  % Starting sample realization r+1
     Nstop = N + Nstart - 1;         % Ending sample realization r+1
     u(:,r+1) = V1(Nstart:Nstop).';  % Extract input realization r+1
     y(:,r+1) = V2(Nstart:Nstop).';  % Extract output realization r+1
@@ -44,15 +47,15 @@ end
 uval = zeros(N,Rval);	% Preallocate
 yval = zeros(N,Rval);	% Preallocate
 for r = R:10-1          % Loop over realizations
-    Nstart = Ntest + r*(N+Ntrans);      % Starting sample realization r+1
+    Nstart = Nzeros+Ntest + NtransBefore + r*(N+Ntrans);      % Starting sample realization r+1
     Nstop = N + Nstart - 1;             % Ending sample realization r+1
     uval(:,r-R+1) = V1(Nstart:Nstop).';	% Extract input realization r+1
     yval(:,r-R+1) = V2(Nstart:Nstop).';	% Extract output realization r+1
 end
 
 % Extract test data
-utest = V1(1:Ntest).';	% Input test data
-ytest = V2(1:Ntest).';	% Output test data
+utest = V1(Nzeros+(1:Ntest)).';	% Input test data
+ytest = V2(Nzeros+(1:Ntest)).';	% Output test data
 
 %% Estimate nonparametric linear model (BLA)
 
