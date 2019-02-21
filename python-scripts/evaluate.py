@@ -4,6 +4,7 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
+from data_generation import chen_example
 
 args = {'ksize': 7,
         'lr': 0.01,
@@ -11,10 +12,10 @@ args = {'ksize': 7,
         'dropout': 0.8,
         'seed': 1111,
         'optim': 'Adam',
-        'batch_size': 1,
+        'batch_size': 3,
         'log_interval': 10,
         'ar': True,
-        'epochs': 10}
+        'epochs': 1000}
 
 torch.manual_seed(args['seed'])
 if torch.cuda.is_available():
@@ -23,13 +24,19 @@ if torch.cuda.is_available():
 
 # %% Prepare
 # Problem specifications
-nu = 2
+nu = 1
 ny = 1
 
 # Producing data
-U_train, Y_train = torch.rand(5, 2, 1000), torch.rand(5, 1, 1000)
-U_val, Y_val = torch.rand(2, 2, 100), torch.rand(2, 1, 100)
-U_test, Y_test = torch.rand(2, 2, 100), torch.rand(2, 1, 100)
+U_train, Y_train = chen_example(1000, 10)
+U_val, Y_val = chen_example(1000, 10)
+U_test, Y_test = chen_example(1000, 10)
+
+# Convert to pytorch tensors
+U_train, Y_train = torch.tensor(U_train, dtype=torch.float), torch.tensor(Y_train, dtype=torch.float)
+U_val, Y_val = torch.tensor(U_val, dtype=torch.float), torch.tensor(Y_val, dtype=torch.float)
+U_test, Y_test = torch.tensor(U_test, dtype=torch.float), torch.tensor(Y_test, dtype=torch.float)
+
 
 if args['ar']:  # Generate autoregressive model
     X_train = torch.cat((U_train, Y_train), 1)
@@ -79,9 +86,9 @@ def train(epoch):
         output = model(x)
         loss = nn.MSELoss()(output, y)
         loss.backward()
-
+        optimizer.step()
         processed = min(i + batch_size, X_train.size()[0])
-        total_loss = i / processed * total_loss + x.size()[0] / processed *loss.item()
+        total_loss = i / processed * total_loss + x.size()[0] / processed * loss.item()
 
         if batch_idx % args['log_interval'] == 0:
             print('Train Epoch: {:2d} [{:6d}/{:6d} ({:.0f}%)]\tLearning rate: {:.4f}\tLoss: {:.6f}'.format(
