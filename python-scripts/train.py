@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
 from data_generation import chen_example
+from model_eval import get_input
 
 args = {'ksize': 7,
         'lr': 0.001,
@@ -32,7 +33,6 @@ ny = 1
 # Producing data
 u_train, y_train = chen_example(1000, 10)
 u_val, y_val = chen_example(1000, 10)
-u_test, y_test = chen_example(1000, 2)
 
 # Convert to pytorch tensors
 u_train, y_train = torch.tensor(u_train, dtype=torch.float), torch.tensor(y_train, dtype=torch.float)
@@ -41,19 +41,14 @@ u_val, y_val = torch.tensor(u_val, dtype=torch.float), torch.tensor(y_val, dtype
 if args['cuda']:
     u_train = u_train.cuda()
     y_train = y_train.cuda()
-    u_val = u_test.cuda()
+    u_val = u_val.cuda()
     y_val = y_val.cuda()
 
-if args['ar']:  # Generate autoregressive model
-    y_delayed = torch.cat((y_train[:, :, 1:], torch.zeros_like(y_train[:, :, 0:1])), -1)
-    x_train = torch.cat((u_train, y_delayed), 1)
-    nx = nu + ny
-else: # Generate "FIR" model
-    x_train = u_train
-    nx = nu
+x_train = get_input(u_train, y_train, args['ar'])
+nx = x_train.size()[1]
 
 # Neural network
-n_channels = [2, 4, 8, 16]
+n_channels = [16, 32, 64, 128]
 kernel_size = args['ksize']
 dropout = args['dropout']
 model = TCN(nx, ny, n_channels, kernel_size=kernel_size, dropout=dropout)
