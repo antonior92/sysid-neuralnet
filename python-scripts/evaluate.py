@@ -37,7 +37,7 @@ u_test, y_test = chen_example(1000, 2)
 # Convert to pytorch tensors
 u_train, y_train = torch.tensor(u_train, dtype=torch.float), torch.tensor(y_train, dtype=torch.float)
 u_val, y_val = torch.tensor(u_val, dtype=torch.float), torch.tensor(y_val, dtype=torch.float)
-u_test, y_test = torch.tensor(u_test, dtype=torch.float), torch.tensor(y_test, dtype=torch.float)
+
 if args['cuda']:
     u_train = u_train.cuda()
     y_train = y_train.cuda()
@@ -97,36 +97,14 @@ def train(epoch):
     return total_loss
 
 
-def one_step_ahead(u, y):
-    model.eval()
 
-    if args['ar']:
-        x = torch.cat((u, y), 1)
-    else:
-        x = u
 
-    y_pred = model(x)
-    return y_pred
 
+all_losses = []
+best_vloss = 1e10
 for epoch in range(1, epochs+1):
-    train(epoch)
-
-
-# %% Test
-if args['plot']:
-    import matplotlib.pyplot as plt
-    for i in range(0, u_test.size()[0]):
-        fig, ax = plt.subplots()
-        y_pred = one_step_ahead(u_test, y_test)
-        ax.plot(y_test[i, 0, :].detach().numpy(), color='b', label='y true')
-        ax.plot(y_pred[i, 0, :].detach().numpy(), color='g', label='y_pred')
-
-        if args['plotly']:
-            import plotly.tools as tls
-            import plotly.offline as py
-            plotly_fig = tls.mpl_to_plotly(fig)
-            py.plot(plotly_fig)
-        else:
-            plt.show()
-
-
+    loss = train(epoch)
+    all_losses += [loss]
+    if loss < best_vloss:  # Use validation loss here instead of training loss
+        torch.save(model, 'best_model.pt')
+        best_vloss = loss
