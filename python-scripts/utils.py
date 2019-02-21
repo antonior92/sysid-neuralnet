@@ -4,7 +4,7 @@ import numpy as np
 
 def data_generator(args):
     # Extract input and output data
-    mat = scipy.io.loadmat('../matlab/data/SilverboxFiles/SNLS80mV.mat')
+    mat = scipy.io.loadmat('../data/SilverboxFiles/SNLS80mV.mat')
     X = mat['V1'][0] # Input
     Y = mat['V2'][0] # Output
     
