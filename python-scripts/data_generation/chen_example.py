@@ -36,8 +36,8 @@ def chen_example(seq_len, n_batches):
     u = np.zeros((n_batches, 1, seq_len))
     y = np.zeros((n_batches, 1, seq_len))
     for i in range(n_batches):
-        u[i, 0, :] = generate_random_input(seq_len, 5)
-        y[i, 0, :] = simulate_system(u[i, 0, :], sd_v=0.1, sd_w=0.5)
+        u[i, 0, :] = generate_random_input(seq_len, 5, seed=2*i)
+        y[i, 0, :] = simulate_system(u[i, 0, :], sd_v=0.1, sd_w=0.5, seed=2*i+1)
     return u, y
 
 
