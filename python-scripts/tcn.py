@@ -88,4 +88,5 @@ class TCN(nn.Module):
 
     def forward(self, x):
         y = self.network(x)
-        return self.linear(y)
+        z = self.linear(y.transpose(1, 2))
+        return z.transpose(1, 2)
