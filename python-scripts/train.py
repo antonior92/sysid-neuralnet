@@ -43,12 +43,10 @@ if args['cuda']:
     y_train = y_train.cuda()
     u_val = u_test.cuda()
     y_val = y_val.cuda()
-    u_test = u_test.cuda()
-    y_test = y_test.cuda()
 
 if args['ar']:  # Generate autoregressive model
-    y_train = torch.cat((y_train[:, :, 1:], torch.zeros_like(y_train[:, :, 0:1])), -1)
-    x_train = torch.cat((u_train, y_train), 1)
+    y_delayed = torch.cat((y_train[:, :, 1:], torch.zeros_like(y_train[:, :, 0:1])), -1)
+    x_train = torch.cat((u_train, y_delayed), 1)
     nx = nu + ny
 else: # Generate "FIR" model
     x_train = u_train
@@ -95,7 +93,6 @@ def train(epoch):
             batch_idx = 0
 
     return total_loss
-
 
 
 all_losses = []
