@@ -98,8 +98,6 @@ def train(epoch):
 
 
 
-
-
 all_losses = []
 best_vloss = 1e10
 for epoch in range(1, epochs+1):
