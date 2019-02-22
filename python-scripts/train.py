@@ -48,12 +48,8 @@ if torch.cuda.is_available():
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 # %% Prepare
-# Problem specifications
 
-
-# Producing data
-
-
+# Specifying datasets
 if args['dataset'] == 'Chen':
     options = args['chen_options']
     loader_train = DataLoaderExt(ChenDataset(seq_len=options['seq_len'], **options['train']),
@@ -69,8 +65,9 @@ elif args['dataset'] == 'SilverBox':
 else:
     raise Exception("Dataset not implemented: {}".format(args['dataset']))
 
-nu = loader_train.data_shape[0][0] # first dimension of u
-ny = loader_train.data_shape[1][0] # first dimension of y
+# Problem specifications
+nu = loader_train.data_shape[0][0] # first dimension of u, ie. # channels of u
+ny = loader_train.data_shape[1][0] # first dimension of y, ie. # channels of y
 
 if args["ar"]:
     nx = nu + ny
@@ -99,6 +96,7 @@ optimizer = getattr(optim, args['optim'])(model.parameters(), lr=lr)
 def validate():
     model.eval()
     total_vloss = 0
+    total_batches = 0
     for i, (u, y) in enumerate(loader_valid):
         if args['cuda']:
             u = u.cuda()
@@ -108,16 +106,16 @@ def validate():
 
         output = model(x)
         vloss = nn.MSELoss()(output, y)
-        processed = min(i + batch_size, len(loader_valid.dataset))
-        total_vloss = i / processed * total_vloss + x.size()[0] / processed * vloss.item()
+        total_batches += x.size()[0]
+        total_vloss += x.size()[0]*vloss.item()
 
-    return total_vloss
+    return total_vloss/total_batches
 
 
 def train(epoch):
     model.train()
     total_loss = 0
-    batch_idx = 0
+    total_batches = 0
     for i, (u, y) in enumerate(loader_train):
         if args['cuda']:
             u = u.cuda()
@@ -132,14 +130,12 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
+        total_batches += x.size()[0]
+        total_loss += x.size()[0] * loss.item()
 
-        processed = min(i + batch_size, len(loader_train.dataset))
-        total_loss = i / processed * total_loss + x.size()[0] / processed * loss.item()
-
-        if batch_idx % args['log_interval'] == 0:
+        if i % args['log_interval'] == 0:
             print('Train Epoch: {:5d} [{:6d}/{:6d} ({:3.0f}%)]\tLearning rate: {:.6f}\tLoss: {:.6f}'.format(
-                epoch, processed, len(loader_train.dataset), 100. * processed / len(loader_train.dataset), lr, total_loss))
-        batch_idx += 1
+                epoch, i, len(loader_train), 100. * i / len(loader_train), lr, total_loss/total_batches))
 
     return total_loss
 
@@ -160,7 +156,7 @@ for epoch in range(1, epochs+1):
     # Print validation results
     print('-'*100)
     print('Train Epoch: {:5d} [{:6d}/{:6d} ({:.0f}%)]\tLearning rate: {:.6f}\tLoss: {:.6f}\tVal Loss: {:.6f}'.format(
-            epoch, len(loader_train.dataset), len(loader_train.dataset), 100., lr, loss, vloss))
+            epoch, len(loader_train), len(loader_train), 100., lr, loss, vloss))
     print('-'*100)
     # lr scheduler
     if epoch > args['lr_scheduler_nepochs'] and vloss > max(all_vlosses[-args['lr_scheduler_nepochs']-1:-1]):
