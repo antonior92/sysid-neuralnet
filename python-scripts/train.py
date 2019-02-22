@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
 from data_generation.data_generator import DataLoaderExt
-from data_generation.chen_example import ChenDataGen
+from data_generation.chen_example import ChenDataset
+from data_generation.silver_box import SilverBoxDataset
 
 
 from model_eval import get_input, one_step_ahead
@@ -25,18 +26,20 @@ args = {'ksize': 3,
         'plotly': True,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
-        'dataset': "Chen",
+        'dataset': "SilverBox",
         'chen_options':
         {
-            'train': {'seq_len': 1000,
+            'seq_len': 1000,
+            'train': {
                       'ntotbatch': 10,
                       'seed': 1
                      },
-            'valid': {'seq_len': 1000,
+            'valid': {
                       'ntotbatch': 10,
                       'seed': 2
                      }
         },
+        'silverbox_options': {'seq_len': 1000},
         'min_lr': 1e-6}
 
 torch.manual_seed(args['seed'])
@@ -53,10 +56,16 @@ if torch.cuda.is_available():
 
 if args['dataset'] == 'Chen':
     options = args['chen_options']
-    loader_train = DataLoaderExt(ChenDataGen(**options['train']),
-                              batch_size=args["batch_size"], shuffle=True, num_workers=4)
-    loader_valid = DataLoaderExt(ChenDataGen(**options['valid']),
-                              batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
+    loader_train = DataLoaderExt(ChenDataset(seq_len=options['seq_len'], **options['train']),
+                                 batch_size=args["batch_size"], shuffle=True, num_workers=4)
+    loader_valid = DataLoaderExt(ChenDataset(seq_len=options['seq_len'], **options['valid']),
+                                 batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
+elif args['dataset'] == 'SilverBox':
+    options = args['silverbox_options']
+    loader_train = DataLoaderExt(SilverBoxDataset(**options, split = 'train'),
+                                 batch_size=args["batch_size"], shuffle=False, num_workers=4)
+    loader_valid = DataLoaderExt(SilverBoxDataset(**options, split='valid'),
+                                 batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
 else:
     raise Exception("Dataset not implemented: {}".format(args['dataset']))
 
@@ -91,6 +100,10 @@ def validate():
     model.eval()
     total_vloss = 0
     for i, (u, y) in enumerate(loader_valid):
+        if args['cuda']:
+            u = u.cuda()
+            y = y.cuda()
+
         x = get_input(u, y, args['ar'])
 
         output = model(x)
@@ -106,6 +119,9 @@ def train(epoch):
     total_loss = 0
     batch_idx = 0
     for i, (u, y) in enumerate(loader_train):
+        if args['cuda']:
+            u = u.cuda()
+            y = y.cuda()
 
         x = get_input(u, y, args['ar'])
 
@@ -148,7 +164,7 @@ for epoch in range(1, epochs+1):
     print('-'*100)
     # lr scheduler
     if epoch > args['lr_scheduler_nepochs'] and vloss > max(all_vlosses[-args['lr_scheduler_nepochs']-1:-1]):
-        print('bfaf')
+        print('bfaf') ## ????
         lr = lr / args['lr_scheduler_factor']
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr

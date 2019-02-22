@@ -1,17 +1,92 @@
+from pathlib import Path
 import scipy.io
 import numpy as np
-import torch
+import os
+import urllib
+import urllib.request
+import zipfile
+
+from data_generation.data_generator import DatasetExt
+
 
 # based on https://github.com/locuslab/TCN/blob/master/TCN/lambada_language/utils.py
 
-def data_generator(args):
+class SilverBoxDataset(DatasetExt):
+
+    def __init__(self, seq_len, split = 'train'):
+        """
+        Create the Silverbox dataset with the choosen split
+        :param split: 'train', 'valid', 'test'
+        """
+
+        self.seq_len = seq_len
+
+        U_train, Y_train, U_val, Y_val, U_test, Y_test = load_silverbox_data(seq_len)
+
+        if split == 'train':
+            u, y = U_train, Y_train
+        elif split == 'valid':
+            u, y = U_val, Y_val
+        elif split == 'test':
+            u, y = U_test, Y_test
+        else:
+            raise Exception("Not a valid split: "+split)
+
+        self.u, self.y = u.astype(np.float32), y.astype(np.float32)
+        self.ntotbatch = self.u.shape[0]
+
+
+    @property
+    def data_shape(self):
+        return (1, self.seq_len), (1, self.seq_len)
+
+    def __len__(self):
+        return self.ntotbatch
+
+    def __getitem__(self, idx):
+        return self.u[idx, ...], self.y[idx, ...]
+
+
+
+def maybe_download_and_extract():
+    """Download the data from nonlinear benchmark website, unless it's already here."""
+    src_url = 'http://www.nonlinearbenchmark.org/FILES/BENCHMARKS/SILVERBOX/SilverboxFiles.zip'
+    home = Path.home()
+    work_dir = str(home.joinpath('datasets/SilverBox'))
+    if not os.path.exists(work_dir):
+        os.makedirs(work_dir)
+    zipfilepath = os.path.join(work_dir, "SilverboxFiles.zip")
+    if not os.path.exists(zipfilepath):
+        filepath, _ = urllib.request.urlretrieve(
+            src_url, zipfilepath)
+        file = os.stat(filepath)
+        size = file.st_size
+        print('Successfully downloaded', 'SilverboxFiles.zip', size, 'bytes.')
+    else:
+        print('SilverboxFiles.zip', 'already downloaded!')
+
+
+    datafilepath = os.path.join(work_dir, "SilverboxFiles/SNLS80mV.mat")
+    print(datafilepath)
+    if not os.path.exists(datafilepath):
+        zip_ref = zipfile.ZipFile(zipfilepath, 'r')
+        zip_ref.extractall(work_dir)
+        zip_ref.close()
+        print('Successfully unzipped data')
+    return datafilepath
+
+
+
+def load_silverbox_data(seq_len):
     # Extract input and output data Silverbox
-    mat = scipy.io.loadmat('../data/SilverboxFiles/SNLS80mV.mat')
+    mat = scipy.io.loadmat(maybe_download_and_extract())
+
+
     U = mat['V1'][0] # Input
     Y = mat['V2'][0] # Output
     
     # Number of samples of each subset of data
-    Nzeros = 100; # Number of zeros at the start
+    Nzeros = 100  # Number of zeros at the start
     Ntest = 40400 # Number of samples in the test set
     NtransBefore = 460 # Number of transient samples before each multisine realization
     N = 8192 # Number of samples per multisine realization
@@ -37,55 +112,54 @@ def data_generator(args):
     # Extract test data
     U_test = U[Nzeros:Nzeros + Ntest]
     Y_test = Y[Nzeros:Nzeros + Ntest]
-    
-    # Turn into torch tensors
-    U_train = torch.from_numpy(U_train)
-    Y_train = torch.from_numpy(Y_train)
-    U_val = torch.from_numpy(U_val)
-    Y_val = torch.from_numpy(Y_val)
-    U_test = torch.from_numpy(U_test)
-    Y_test = torch.from_numpy(Y_test)
-    
-    # Reshape into (nBatches,nInputsorOutputs,nSamples)
-    U_train = batchify(U_train, args['batch_size'], args)
-    Y_train = batchify(Y_train, args['batch_size'], args)
-    U_val = batchify(U_val, args['batch_size'], args)
-    Y_val = batchify(Y_val, args['batch_size'], args)
-    U_test = batchify(U_test, args['batch_size'], args)
-    Y_test = batchify(Y_test, args['batch_size'], args)
-    
-    return U_train, Y_train, U_val, Y_val, U_test, Y_test;
 
-def batchify(data, batch_size, args):
+
+
+    # Reshape into (nBatches,nInputsorOutputs, nSamples)
+    U_train = batchify(U_train, seq_len)
+    Y_train = batchify(Y_train, seq_len)
+    U_val = batchify(U_val, seq_len)
+    Y_val = batchify(Y_val, seq_len)
+    U_test = batchify(U_test, seq_len)
+    Y_test = batchify(Y_test, seq_len)
+
+
+
+    return U_train, Y_train, U_val, Y_val, U_test, Y_test
+
+def batchify(data, seq_len):
+    """
+
+    :param data: Data which is to be split up in batches
+    :param seq_len: Length of each sequence in the batches
+    :return: Batchified data
+    """
     # data should be a torch tensor
     # data should have size (total number of samples) times (number of signals)
     # The output has size (number of batches) times (number of signals) times (batch size)
     # Work out how cleanly we can divide the dataset into batch_size parts (i.e. continuous seqs).
-    nbatch = data.size(0) // batch_size
+    nbatch = data.shape[0] // seq_len
     # Trim off any extra elements that wouldn't cleanly fit (remainders).
-    data = data.narrow(0, 0, nbatch * batch_size)
+    data = data[:nbatch * seq_len]
 #    data = data[range(nbatch * batch_size), :]
 #    data = np.reshape(data, [batch_size, nbatch, -1], order='F')
 #    data = np.transpose(data, (1, 2, 0))
     # Evenly divide the data across the batch_size batches and make sure it is still in temporal order
-    data = data.view(nbatch, batch_size, -1).transpose(0, 1)
-#    Transforming to cuda() is done in evaluate script
-#    if args['cuda']:
-#        data = data.cuda()
-    return data;
+    data = data.reshape((nbatch, 1, seq_len)).transpose(0, 1, 2)
+    #data = data.view(nbatch, batch_size, -1).transpose(0, 1)
+    return data
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # For testing purposes, should be removed afterwards
-    args = {'batch_size': 1}
-    U_train, Y_train, U_val, Y_val, U_test, Y_test = data_generator(args)
+    U_train, Y_train, U_val, Y_val, U_test, Y_test = load_silverbox_data(seq_len=1000)
     # Convert back from torch tensor to numpy vector
-    X_train = U_train.numpy().reshape(-1)
-    Y_train = Y_train.numpy().reshape(-1)
-    X_val = U_val.numpy().reshape(-1)
-    Y_val = Y_val.numpy().reshape(-1)
-    X_test = U_test.numpy().reshape(-1)
-    Y_test = Y_test.numpy().reshape(-1)
+    X_train = U_train.reshape(-1)
+    Y_train = Y_train.reshape(-1)
+    X_val = U_val.reshape(-1)
+    Y_val = Y_val.reshape(-1)
+    X_test = U_test.reshape(-1)
+    Y_test = Y_test.reshape(-1)
     # Plot training data
     plt.figure()
     plt.plot(1 + np.arange(len(X_train)), X_train)

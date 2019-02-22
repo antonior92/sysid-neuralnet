@@ -9,9 +9,9 @@ Neural Networks, International Journal of Control 51 (6) (1990) 1191–
 import numpy as np
 import numpy.random as rd
 
-from .data_generator import DatasetExt
+from data_generation.data_generator import DatasetExt
 
-class ChenDataGen(DatasetExt):
+class ChenDataset(DatasetExt):
     def __init__(self, seq_len, ntotbatch, seed=1):
         self.seed = seed
         self.rng = rd.RandomState(seed)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
 
 
-    loader = DataLoader(ChenDataGen(seq_len=5, ntotbatch=1000), batch_size=4,
+    loader = DataLoader(ChenDataset(seq_len=5, ntotbatch=1000), batch_size=4,
                         shuffle=True, num_workers=4)
 
 
