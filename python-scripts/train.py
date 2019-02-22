@@ -4,7 +4,10 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
-from data_generation import chen_example
+from data_generation.data_generator import DataLoaderExt
+from data_generation.chen_example import ChenDataGen
+
+
 from model_eval import get_input, one_step_ahead
 
 args = {'ksize': 3,
@@ -14,6 +17,7 @@ args = {'ksize': 3,
         'seed': 1111,
         'optim': 'Adam',
         'batch_size': 3,
+        'eval_batch_size': 10,
         'log_interval': 1,
         'ar': True,
         'epochs': 1000,
@@ -21,6 +25,18 @@ args = {'ksize': 3,
         'plotly': True,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
+        'dataset': "Chen",
+        'chen_options':
+        {
+            'train': {'seq_len': 1000,
+                      'ntotbatch': 10,
+                      'seed': 1
+                     },
+            'valid': {'seq_len': 1000,
+                      'ntotbatch': 10,
+                      'seed': 2
+                     }
+        },
         'min_lr': 1e-6}
 
 torch.manual_seed(args['seed'])
@@ -30,26 +46,27 @@ if torch.cuda.is_available():
 
 # %% Prepare
 # Problem specifications
-nu = 1
-ny = 1
+
 
 # Producing data
-u_train, y_train = chen_example(1000, 10)
-u_val, y_val = chen_example(1000, 10)
 
-# Convert to pytorch tensors
-u_train, y_train = torch.tensor(u_train, dtype=torch.float), torch.tensor(y_train, dtype=torch.float)
-u_val, y_val = torch.tensor(u_val, dtype=torch.float), torch.tensor(y_val, dtype=torch.float)
 
-if args['cuda']:
-    u_train = u_train.cuda()
-    y_train = y_train.cuda()
-    u_val = u_val.cuda()
-    y_val = y_val.cuda()
+if args['dataset'] == 'Chen':
+    options = args['chen_options']
+    loader_train = DataLoaderExt(ChenDataGen(**options['train']),
+                              batch_size=args["batch_size"], shuffle=True, num_workers=4)
+    loader_valid = DataLoaderExt(ChenDataGen(**options['valid']),
+                              batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
+else:
+    raise Exception("Dataset not implemented: {}".format(args['dataset']))
 
-x_train = get_input(u_train, y_train, args['ar'])
-x_val = get_input(u_val, y_val, args['ar'])
-nx = x_train.size()[1]
+nu = loader_train.data_shape[0][0] # first dimension of u
+ny = loader_train.data_shape[1][0] # first dimension of y
+
+if args["ar"]:
+    nx = nu + ny
+else:
+    nx = nu
 
 # Neural network
 n_channels = [16, 32]
@@ -73,15 +90,12 @@ optimizer = getattr(optim, args['optim'])(model.parameters(), lr=lr)
 def validate():
     model.eval()
     total_vloss = 0
-    for i in range(0, x_val.size()[0], batch_size):
-        if i + batch_size > x_train.size()[0]:
-            x, y = x_val[i:], y_val[i:]
-        else:
-            x, y = x_val[i:(i + batch_size)], y_val[i:(i + batch_size)]
+    for i, (u, y) in enumerate(loader_valid):
+        x = get_input(u, y, args['ar'])
 
         output = model(x)
         vloss = nn.MSELoss()(output, y)
-        processed = min(i + batch_size, x_train.size()[0])
+        processed = min(i + batch_size, len(loader_valid.dataset))
         total_vloss = i / processed * total_vloss + x.size()[0] / processed * vloss.item()
 
     return total_vloss
@@ -91,23 +105,24 @@ def train(epoch):
     model.train()
     total_loss = 0
     batch_idx = 0
-    for i in range(0, x_train.size()[0], batch_size):
-        if i + batch_size > x_train.size()[0]:
-            x, y = x_train[i:], y_train[i:]
-        else:
-            x, y = x_train[i:(i + batch_size)], y_train[i:(i + batch_size)]
+    for i, (u, y) in enumerate(loader_train):
+
+        x = get_input(u, y, args['ar'])
+
         optimizer.zero_grad()
 
         output = model(x)
         loss = nn.MSELoss()(output, y)
         loss.backward()
         optimizer.step()
-        processed = min(i + batch_size, x_train.size()[0])
+
+
+        processed = min(i + batch_size, len(loader_train.dataset))
         total_loss = i / processed * total_loss + x.size()[0] / processed * loss.item()
 
         if batch_idx % args['log_interval'] == 0:
             print('Train Epoch: {:5d} [{:6d}/{:6d} ({:3.0f}%)]\tLearning rate: {:.6f}\tLoss: {:.6f}'.format(
-                epoch, processed, x_train.size()[0], 100. * processed / x_train.size()[0], lr, total_loss))
+                epoch, processed, len(loader_train.dataset), 100. * processed / len(loader_train.dataset), lr, total_loss))
         batch_idx += 1
 
     return total_loss
@@ -129,7 +144,7 @@ for epoch in range(1, epochs+1):
     # Print validation results
     print('-'*100)
     print('Train Epoch: {:5d} [{:6d}/{:6d} ({:.0f}%)]\tLearning rate: {:.6f}\tLoss: {:.6f}\tVal Loss: {:.6f}'.format(
-            epoch, x_train.size()[0], x_train.size()[0], 100., lr, loss, vloss))
+            epoch, len(loader_train.dataset), len(loader_train.dataset), 100., lr, loss, vloss))
     print('-'*100)
     # lr scheduler
     if epoch > args['lr_scheduler_nepochs'] and vloss > max(all_vlosses[-args['lr_scheduler_nepochs']-1:-1]):

@@ -1,3 +1,3 @@
-from .chen_example import chen_example
+from .chen_example import ChenDataGen
 
 __all__ = ['chen_example']
