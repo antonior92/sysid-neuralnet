@@ -145,7 +145,8 @@ def batchify(data, seq_len):
 #    data = np.reshape(data, [batch_size, nbatch, -1], order='F')
 #    data = np.transpose(data, (1, 2, 0))
     # Evenly divide the data across the batch_size batches and make sure it is still in temporal order
-    data = data.reshape((nbatch, 1, seq_len)).transpose(0, 1, 2)
+#    data = data.reshape((nbatch, 1, seq_len)).transpose(0, 1, 2)
+    data = data.reshape((seq_len, nbatch, 1), order='F').transpose(1,2,0)
     #data = data.view(nbatch, batch_size, -1).transpose(0, 1)
     return data
 
