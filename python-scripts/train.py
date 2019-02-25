@@ -4,9 +4,12 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
+from lstm import  LSTM
 from data_generation.data_generator import DataLoaderExt
 from data_generation.chen_example import ChenDataset
 from data_generation.silver_box import SilverBoxDataset
+
+
 from model_eval import get_input, one_step_ahead
 
 args = {'ksize': 3,
@@ -27,6 +30,11 @@ args = {'ksize': 3,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
         'dataset': "SilverBox",
+        'model': 'lstm',
+        'lstm_options':
+            {
+                'hidden_size': 5
+            },
         'chen_options':
         {
             'seq_len': 1000,
@@ -58,7 +66,7 @@ if args['dataset'] == 'Chen':
                                  batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
 elif args['dataset'] == 'SilverBox':
     options = args['silverbox_options']
-    loader_train = DataLoaderExt(SilverBoxDataset(**options, split='train'),
+    loader_train = DataLoaderExt(SilverBoxDataset(**options, split = 'train'),
                                  batch_size=args["batch_size"], shuffle=False, num_workers=4)
     loader_valid = DataLoaderExt(SilverBoxDataset(**options, split='valid'),
                                  batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
@@ -66,20 +74,25 @@ else:
     raise Exception("Dataset not implemented: {}".format(args['dataset']))
 
 # Problem specifications
-nu = loader_train.data_shape[0][0]  # first dimension of u, ie. # channels of u
-ny = loader_train.data_shape[1][0]  # first dimension of y, ie. # channels of y
+nu = loader_train.data_shape[0][0] # first dimension of u, ie. # channels of u
+ny = loader_train.data_shape[1][0] # first dimension of y, ie. # channels of y
 
 if args["ar"]:
     nx = nu + ny
 else:
     nx = nu
 
+
+
 # Neural network
-n_channels = args['n_channels']
-dilation_sizes = args['dilation_sizes']
-kernel_size = args['ksize']
-dropout = args['dropout']
-model = TCN(nx, ny, n_channels, kernel_size=kernel_size, dilation_sizes=dilation_sizes, dropout=dropout)
+if args['model'] == 'lstm':
+    model = LSTM(nx, **args['lstm_options'])
+elif args['model'] == 'tcn':
+    n_channels = args['n_channels']
+    dilation_sizes = args['dilation_sizes']
+    kernel_size = args['ksize']
+    dropout = args['dropout']
+    model = TCN(nx, ny, n_channels, kernel_size=kernel_size, dilation_sizes=dilation_sizes, dropout=dropout)
 if args['cuda']:
     model.cuda()
 
