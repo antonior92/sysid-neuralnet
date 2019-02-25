@@ -4,25 +4,20 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from tcn import TCN
-from lstm import  LSTM
+from lstm import LSTM
 from data_generation.data_generator import DataLoaderExt
 from data_generation.chen_example import ChenDataset
 from data_generation.silver_box import SilverBoxDataset
 
-
 from model_eval import get_input, one_step_ahead
 
-args = {'ksize': 3,
-        'lr': 0.001,
+args = {'lr': 0.001,
         'cuda': False,
-        'dropout': 0.8,
         'seed': 1111,
         'optim': 'Adam',
         'batch_size': 3,
         'eval_batch_size': 10,
         'log_interval': 1,
-        'n_channels': [16, 32],
-        'dilation_sizes': [1, 1],
         'ar': True,
         'epochs': 1000,
         'plot': True,
@@ -31,6 +26,13 @@ args = {'ksize': 3,
         'lr_scheduler_factor': 10,
         'dataset': "SilverBox",
         'model': 'lstm',
+        'tcn_options':
+            {
+            'n_channels': [16, 32],
+            'dilation_sizes': [1, 1],
+            'ksize': 3,
+            'dropout': 0.8,
+            },
         'lstm_options':
             {
                 'hidden_size': 5
@@ -83,16 +85,11 @@ else:
     nx = nu
 
 
-
 # Neural network
 if args['model'] == 'lstm':
     model = LSTM(nx, **args['lstm_options'])
 elif args['model'] == 'tcn':
-    n_channels = args['n_channels']
-    dilation_sizes = args['dilation_sizes']
-    kernel_size = args['ksize']
-    dropout = args['dropout']
-    model = TCN(nx, ny, n_channels, kernel_size=kernel_size, dilation_sizes=dilation_sizes, dropout=dropout)
+    model = TCN(nx, ny, **args['tcn_options'])
 if args['cuda']:
     model.cuda()
 
