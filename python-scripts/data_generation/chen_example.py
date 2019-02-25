@@ -11,6 +11,7 @@ import numpy.random as rd
 
 from data_generation.data_generator import DatasetExt
 
+
 class ChenDataset(DatasetExt):
     def __init__(self, seq_len, ntotbatch, seed=1):
         self.seed = seed
@@ -42,11 +43,9 @@ class ChenDataset(DatasetExt):
         return (0.8 - 0.5 * np.exp(-y1 ** 2)) * y1 - (0.3 + 0.9 * np.exp(-y1 ** 2)) * y2 \
                + u1 + 0.2 * u2 + 0.1 * u1 * u2
 
-
     def _generate_random_input(self, n, nrep, sd=1):
         u = sd*self.rng.randn(int(n//nrep))
         return np.repeat(u, nrep)
-
 
     def _simulate_system(self, u, sd_v, sd_w):
         n = np.shape(u)[0]
@@ -58,17 +57,13 @@ class ChenDataset(DatasetExt):
         return y + w
 
 
-
 if __name__ == "__main__":
 
     from torch.utils.data import DataLoader
 
-
     loader = DataLoader(ChenDataset(seq_len=5, ntotbatch=1000), batch_size=4,
                         shuffle=True, num_workers=4)
-
 
     for d in loader:
         print(d)
         quit()
-

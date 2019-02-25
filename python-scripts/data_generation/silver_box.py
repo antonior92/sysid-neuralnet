@@ -10,10 +10,9 @@ from data_generation.data_generator import DatasetExt
 
 
 # based on https://github.com/locuslab/TCN/blob/master/TCN/lambada_language/utils.py
-
 class SilverBoxDataset(DatasetExt):
 
-    def __init__(self, seq_len, split = 'train'):
+    def __init__(self, seq_len, split='train'):
         """
         Create the Silverbox dataset with the choosen split
         :param split: 'train', 'valid', 'test'
@@ -35,7 +34,6 @@ class SilverBoxDataset(DatasetExt):
         self.u, self.y = u.astype(np.float32), y.astype(np.float32)
         self.ntotbatch = self.u.shape[0]
 
-
     @property
     def data_shape(self):
         return (1, self.seq_len), (1, self.seq_len)
@@ -45,7 +43,6 @@ class SilverBoxDataset(DatasetExt):
 
     def __getitem__(self, idx):
         return self.u[idx, ...], self.y[idx, ...]
-
 
 
 def maybe_download_and_extract():
@@ -65,7 +62,6 @@ def maybe_download_and_extract():
     else:
         print('SilverboxFiles.zip', 'already downloaded!')
 
-
     datafilepath = os.path.join(work_dir, "SilverboxFiles/SNLS80mV.mat")
     print(datafilepath)
     if not os.path.exists(datafilepath):
@@ -76,11 +72,9 @@ def maybe_download_and_extract():
     return datafilepath
 
 
-
 def load_silverbox_data(seq_len):
     # Extract input and output data Silverbox
     mat = scipy.io.loadmat(maybe_download_and_extract())
-
 
     U = mat['V1'][0] # Input
     Y = mat['V2'][0] # Output
@@ -113,8 +107,6 @@ def load_silverbox_data(seq_len):
     U_test = U[Nzeros:Nzeros + Ntest]
     Y_test = Y[Nzeros:Nzeros + Ntest]
 
-
-
     # Reshape into (nBatches,nInputsorOutputs, nSamples)
     U_train = batchify(U_train, seq_len)
     Y_train = batchify(Y_train, seq_len)
@@ -123,9 +115,8 @@ def load_silverbox_data(seq_len):
     U_test = batchify(U_test, seq_len)
     Y_test = batchify(Y_test, seq_len)
 
-
-
     return U_train, Y_train, U_val, Y_val, U_test, Y_test
+
 
 def batchify(data, seq_len):
     """
@@ -149,6 +140,7 @@ def batchify(data, seq_len):
     data = data.reshape((seq_len, nbatch, 1), order='F').transpose(1,2,0)
     #data = data.view(nbatch, batch_size, -1).transpose(0, 1)
     return data
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
