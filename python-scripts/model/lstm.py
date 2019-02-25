@@ -1,19 +1,13 @@
-
-
 import torch
 import torch.nn as nn
 
 
-
-
-
-
 class LSTM(nn.Module):
-    def __init__(self,  input_dim, hidden_size):
+    def __init__(self, num_inputs, num_outputs, hidden_size):
         super(LSTM, self).__init__()
-        self.lstm = nn.LSTM(input_dim, hidden_size)
+        self.lstm = nn.LSTM(num_inputs, hidden_size)
 
-        self.decoding_layers = nn.Conv1d(hidden_size, 1, 1)
+        self.decoding_layers = nn.Conv1d(hidden_size, num_outputs, 1)
 
     def init_hidden(self, batch_size):
         return (torch.zeros(1, batch_size, self.lstm.hidden_size),

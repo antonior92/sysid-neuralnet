@@ -5,11 +5,11 @@ import torch.nn as nn
 import torch.optim as optim
 from model.tcn import TCN
 from model.lstm import LSTM
+from model.dynamic_model import DynamicModel
 from data_generation.data_generator import DataLoaderExt
 from data_generation.chen_example import ChenDataset
 from data_generation.silver_box import SilverBoxDataset
 
-from model_eval import get_input, one_step_ahead
 
 args = {'lr': 0.001,
         'cuda': False,
@@ -27,16 +27,16 @@ args = {'lr': 0.001,
         'dataset': "SilverBox",
         'model': 'tcn',
         'tcn_options':
-            {
-            'num_channels': [16, 32],
-            'dilation_sizes': [1, 1],
-            'kernel_size': 3,
-            'dropout': 0.8,
-            },
+        {
+        'num_channels': [16, 32],
+        'dilation_sizes': [1, 1],
+        'kernel_size': 3,
+        'dropout': 0.8,
+        },
         'lstm_options':
-            {
-                'hidden_size': 5
-            },
+        {
+            'hidden_size': 5
+        },
         'chen_options':
         {
             'seq_len': 1000,
@@ -68,7 +68,7 @@ if args['dataset'] == 'Chen':
                                  batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
 elif args['dataset'] == 'SilverBox':
     options = args['silverbox_options']
-    loader_train = DataLoaderExt(SilverBoxDataset(**options, split = 'train'),
+    loader_train = DataLoaderExt(SilverBoxDataset(**options, split='train'),
                                  batch_size=args["batch_size"], shuffle=False, num_workers=4)
     loader_valid = DataLoaderExt(SilverBoxDataset(**options, split='valid'),
                                  batch_size=args["eval_batch_size"], shuffle=False, num_workers=4)
@@ -76,20 +76,20 @@ else:
     raise Exception("Dataset not implemented: {}".format(args['dataset']))
 
 # Problem specifications
-nu = loader_train.data_shape[0][0] # first dimension of u, ie. # channels of u
-ny = loader_train.data_shape[1][0] # first dimension of y, ie. # channels of y
-
-if args["ar"]:
-    nx = nu + ny
-else:
-    nx = nu
-
+nu = loader_train.data_shape[0][0]  # first dimension of u, ie. # channels of u
+ny = loader_train.data_shape[1][0]  # first dimension of y, ie. # channels of y
 
 # Neural network
 if args['model'] == 'lstm':
-    model = LSTM(nx, **args['lstm_options'])
+    model = LSTM
+    model_options = args['lstm_options']
 elif args['model'] == 'tcn':
-    model = TCN(nx, ny, **args['tcn_options'])
+    model = TCN
+    model_options = args['tcn_options']
+else:
+    raise Exception("Model not implemented: {}".format(args['model']))
+model = DynamicModel(model, nu, ny, args['ar'], **model_options)
+
 if args['cuda']:
     model.cuda()
 
@@ -102,7 +102,6 @@ optimizer = getattr(optim, args['optim'])(model.parameters(), lr=lr)
 
 
 # %% Train
-
 def validate():
     model.eval()
     total_vloss = 0
@@ -111,13 +110,10 @@ def validate():
         if args['cuda']:
             u = u.cuda()
             y = y.cuda()
-
-        x = get_input(u, y, args['ar'])
-
-        output = model(x)
+        output = model(u, y)
         vloss = nn.MSELoss()(output, y)
-        total_batches += x.size()[0]
-        total_vloss += x.size()[0]*vloss.item()
+        total_batches += u.size()[0]
+        total_vloss += u.size()[0]*vloss.item()
 
     return total_vloss/total_batches
 
@@ -130,24 +126,21 @@ def train(epoch):
         if args['cuda']:
             u = u.cuda()
             y = y.cuda()
-
-        x = get_input(u, y, args['ar'])
-
         optimizer.zero_grad()
 
-        output = model(x)
+        output = model(u, y)
         loss = nn.MSELoss()(output, y)
         loss.backward()
         optimizer.step()
 
-        total_batches += x.size()[0]
-        total_loss += x.size()[0] * loss.item()
+        total_batches += u.size()[0]
+        total_loss += u.size()[0] * loss.item()
 
         if i % args['log_interval'] == 0:
             print('Train Epoch: {:5d} [{:6d}/{:6d} ({:3.0f}%)]\tLearning rate: {:.6f}\tLoss: {:.6f}'.format(
                 epoch, i, len(loader_train), 100. * i / len(loader_train), lr, total_loss/total_batches))
 
-    return total_loss
+    return total_loss/total_batches
 
 
 all_losses = []
