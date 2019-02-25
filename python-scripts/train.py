@@ -3,8 +3,8 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
-from tcn import TCN
-from lstm import LSTM
+from model.tcn import TCN
+from model.lstm import LSTM
 from data_generation.data_generator import DataLoaderExt
 from data_generation.chen_example import ChenDataset
 from data_generation.silver_box import SilverBoxDataset
@@ -25,12 +25,12 @@ args = {'lr': 0.001,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
         'dataset': "SilverBox",
-        'model': 'lstm',
+        'model': 'tcn',
         'tcn_options':
             {
-            'n_channels': [16, 32],
+            'num_channels': [16, 32],
             'dilation_sizes': [1, 1],
-            'ksize': 3,
+            'kernel_size': 3,
             'dropout': 0.8,
             },
         'lstm_options':
