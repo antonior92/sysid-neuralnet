@@ -128,7 +128,7 @@ def clean_options(options):
     return options
 
 
-def get_options():
+def get_commandline_args():
     def str2bool(v):
         if v.lower() in ('yes', 'true', 't', 'y', '1'):
             return True
@@ -161,25 +161,30 @@ def get_options():
     parser.add_argument('--option_dict', type=str, default='{}',
                         help='Json with options specified at commandline (default(%s))')
 
+    args = vars(parser.parse_args())
+
+    #Options file
+    option_file = args['option_file']
+
+    #Options dict from commandline
+    option_dict = json.loads(args['option_dict'])
+
+    command_lineoptions = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
+
+    return command_lineoptions, option_dict, option_file
+
+def get_options(option_file = None, *option_dicts):
 
     merged_options = copy.deepcopy(default_options)
 
-    args = vars(parser.parse_args())
-
     # Options specified in file
-    if args["option_file"] is not None:
-        file = open(args["option_file"], "r")
+    if option_file is not None:
+        file = open(option_file, "r")
         options = json.loads(file.read())
         merged_options = recursive_merge(merged_options, options)
 
-    # Options specified in commandline dict
-    options = json.loads(args['option_dict'])
-    merged_options = recursive_merge(merged_options, options)
-
-    # Options specified at command line
-    args = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
-    merged_options = {**merged_options, **args}
-
+    for option_dict in option_dicts:
+        merged_options = recursive_merge(merged_options, option_dict)
 
     # Clear away unused fields
     options = clean_options(merged_options)
@@ -200,13 +205,13 @@ def get_options():
     return options
 
 
+def run(options=None, load_model=None, mode='interactive'):
 
-def main():
+    if options is None:
+        options = {}
 
-    options = get_options()
-
-    if options["load_model"] is not None:
-        file = open(os.path.join(os.path.dirname(options["load_model"]), 'options.txt'), "r")
+    if load_model is not None:
+        file = open(os.path.join(os.path.dirname(load_model), 'options.txt'), "r")
         ckpt_options = json.loads(file.read())
 
         options["optimizer"] = ckpt_options["optimizer"]
@@ -214,6 +219,8 @@ def main():
         options["model_options"] = ckpt_options["model_options"]
         options["dataset"] = ckpt_options["dataset"]
         options["dataset_options"] = ckpt_options["dataset_options"]
+
+        options = recursive_merge(ckpt_options, options)
 
     # Specifying datasets
     loaders = loader.load_dataset(dataset=options["dataset"],
@@ -232,36 +239,40 @@ def main():
                             model_options=options["model_options"])
 
     # Restore model
-    if options["load_model"] is not None:
-        current_epoch = modelstate.load_model(options["load_model"])
+    if load_model is not None:
+        current_epoch = modelstate.load_model(load_model)
     else:
         current_epoch = 0
 
-    # Write options used to file
-    os.makedirs(os.path.dirname(options["logdir"] + "/options.txt"), exist_ok=True)
-    with open(options["logdir"] + "/options.txt", "w+") as f:
-        f.write(json.dumps(options, indent=1))
-        print(json.dumps(options, indent=1))
+    if mode == 'script':
+        # Write options used to file
+        os.makedirs(os.path.dirname(options["logdir"] + "/options.txt"), exist_ok=True)
+        with open(options["logdir"] + "/options.txt", "w+") as f:
+            f.write(json.dumps(options, indent=1))
+            print(json.dumps(options, indent=1))
 
-    #Run model
-    if options["evaluate_model"]:
-        run_test(epoch=current_epoch,
-                 logdir = options["logdir"],
-                 loader_test=loaders["test"],
-                 model=modelstate.model,
-                 test_options=options["test_options"])
-    else:
-        run_train(start_epoch=current_epoch,
-                  cuda=options["cuda"],
-                  modelstate=modelstate,
-                  logdir=options["logdir"],
-                  loader_train=loaders["train"],
-                  loader_valid=loaders["valid"],
-                  train_options=options["train_options"])
-
-
+        #Run model
+        if options["evaluate_model"]:
+            run_test(epoch=current_epoch,
+                     logdir = options["logdir"],
+                     loader_test=loaders["test"],
+                     model=modelstate.model,
+                     test_options=options["test_options"])
+        else:
+            run_train(start_epoch=current_epoch,
+                      cuda=options["cuda"],
+                      modelstate=modelstate,
+                      logdir=options["logdir"],
+                      loader_train=loaders["train"],
+                      loader_valid=loaders["valid"],
+                      train_options=options["train_options"])
+    elif mode == 'interactive':
+        return (modelstate.model, loaders, options)
 
 
 if __name__ == "__main__":
+    command_lineoptions, option_dict, option_file = get_commandline_args()
 
-    main()
+    run_options = get_options(option_file, option_dict, command_lineoptions)
+
+    run(run_options, load_model=run_options["load_model"], mode='script')
