@@ -1,8 +1,6 @@
-
 from multiprocessing import Process
 import run
 import time
-
 
 
 class tcn_model:
