@@ -23,7 +23,6 @@ default_options_tcn = {
     'ar': True
 }
 
-
 default_options_chen = {
     'seq_len': 1000,
     'train': {
@@ -48,7 +47,6 @@ default_options_train = {
         'log_interval': 1
 }
 
-
 default_options_optimizer = {
     'optim': 'Adam',
 }
@@ -67,14 +65,11 @@ default_options = {
     'run_name': None,
     'load_model': None,
     'evaluate_model': False,
-
     'train_options': default_options_train,
     'test_options': default_options_test,
-
     'optimizer': default_options_optimizer,
 
     'dataset': "silverbox",
-
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
