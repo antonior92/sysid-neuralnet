@@ -18,7 +18,7 @@ default_options_lstm = {
 
 default_options_tcn = {
     'ksize': 3,
-    'dropout': 0.8,
+    'dropout': 0.2,
     'n_channels': [16, 32],
     'dilation_sizes': [1, 1],
     'ar': True,
@@ -102,10 +102,10 @@ def recursive_merge(default_dict, new_dict, path=None):
         if key in default_dict:
             if isinstance(default_dict[key], dict) and isinstance(new_dict[key], dict):
                 recursive_merge(default_dict[key], new_dict[key], path + [str(key)])
-            elif default_dict[key] == new_dict[key]:
-                pass  # same leaf value
-            else:
+            elif isinstance(default_dict[key], dict) or isinstance(new_dict[key], dict):
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
+            else:
+                default_dict[key] = new_dict[key]
         else:
             raise Exception('Default value not found at %s' % '.'.join(path + [str(key)]))
             # default_dict[key] = new_dict[key]
