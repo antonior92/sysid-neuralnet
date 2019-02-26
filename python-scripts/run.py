@@ -1,6 +1,3 @@
-
-
-
 import argparse
 import json
 import copy
@@ -161,7 +158,6 @@ def get_options():
     parser.add_argument('--option_dict', type=str, default='{}',
                         help='Json with options specified at commandline (default(%s))')
 
-
     merged_options = copy.deepcopy(default_options)
 
     args = vars(parser.parse_args())
@@ -179,7 +175,6 @@ def get_options():
     # Options specified at command line
     args = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
     merged_options = {**merged_options, **args}
-
 
     # Clear away unused fields
     options = clean_options(merged_options)
@@ -200,9 +195,7 @@ def get_options():
     return options
 
 
-
 def main():
-
     options = get_options()
 
     if options["load_model"] is not None:
@@ -220,7 +213,6 @@ def main():
                                   dataset_options=options["dataset_options"],
                                   train_batch_size=options["train_options"]["batch_size"],
                                   test_batch_size=options["test_options"]["batch_size"])
-
 
     # Define model
     modelstate = ModelState(seed=options["seed"],
@@ -243,7 +235,7 @@ def main():
         f.write(json.dumps(options, indent=1))
         print(json.dumps(options, indent=1))
 
-    #Run model
+    # Run model
     if options["evaluate_model"]:
         run_test(epoch=current_epoch,
                  logdir = options["logdir"],
@@ -260,8 +252,5 @@ def main():
                   train_options=options["train_options"])
 
 
-
-
 if __name__ == "__main__":
-
     main()
