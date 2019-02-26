@@ -14,6 +14,14 @@ class tcn_model:
         self.ar = ar
 
 
+class mlp_model:
+    __dict__ = {'hidden_size': 10,
+                'max_past_input': 3,
+                'ar': True,
+                'io_delay': 1}
+
+
+
 def sub_run(dict):
     print("running")
     options = run.get_options(None, dict)
@@ -21,13 +29,30 @@ def sub_run(dict):
 
 option_dicts = []
 
-n_channels_list = [[4, 4], [8, 8], [16, 16], [32, 32]]
-for i, n_channels in enumerate(n_channels_list):
-    tc_options = tcn_model(n_channels=n_channels, dilation_sizes=None)
 
-    option_dicts.append({"run_name":"tc_channels_"+str(i),
-                         "dataset": "silverbox","model": "tcn", "tcn_options": vars(tc_options)})
 
+
+
+mlp_max_past_input_list = [2**i for i in range(5)]
+mlp_hidden_size_list = [8*2**i for i in range(6)]
+io_delay_list  = [0, 1, 2, 3]
+
+for mlp_hidden_size in mlp_hidden_size_list:
+    for mlp_max_past_input in mlp_max_past_input_list:
+        for io_delay in io_delay_list:
+            option_dicts.append({"logdir": "log/mlp_networks", "cuda":True,
+                                 "dataset": "silverbox", "model": "mlp",
+                                 "train_options": {},
+                                 "mlp_options": {"hidden_size":mlp_hidden_size,
+                                                 "max_past_input":mlp_max_past_input,
+                                                 "io_delay":io_delay}})
+
+
+#seqlen_list    = [32*2**i for i in range(6)]
+#batchsize_list = [8*2**i  for i in range(6)]
+
+
+num_processes = 4
 
 processes = []
 while len(option_dicts) > 0:
@@ -36,7 +61,7 @@ while len(option_dicts) > 0:
     processes.append(new_p)
     new_p.start()
     time.sleep(1)
-    while len(processes) > 3:
+    while len(processes) >= num_processes:
         for p in processes:
             if not p.is_alive():
                 p.join()

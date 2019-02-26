@@ -54,11 +54,13 @@ class ModelState:
                 raise Exception("Could not find model: " + path)
         return epoch
 
-    def save_model(self, epoch, path, name='model.pt'):
+    def save_model(self, epoch, vloss,  path, name='model.pt'):
 
         torch.save({
                 'epoch': epoch,
                 'model': self.model.state_dict(),
-                'optimizer': self.optimizer.state_dict()
+                'optimizer': self.optimizer.state_dict(),
+                'vloss':vloss
             },
             os.path.join(path, name))
+
