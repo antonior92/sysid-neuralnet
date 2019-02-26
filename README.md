@@ -12,7 +12,7 @@ import run
 
 all_output = []
 for i, (u, y) in enumerate(loaders["train"]):
-  all_output += [model(u,y)]
- 
- all_output = np.concat(all_output,0)
+    all_output += [model(u,y)]
+
+all_output = np.concat(all_output,0)
 ```
