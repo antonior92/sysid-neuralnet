@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from data_generation import DataLoaderExt, ChenDataset
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 args = {'plotly': True}
 
@@ -123,11 +124,12 @@ for i, (u, y) in enumerate(loader_test):
                     'abbreviation': 'MLP-ANN'
             }
         }
+        colors = iter(cm.rainbow(np.linspace(0, 1, len(otherApproachesSilverbox))))
         fig, ax = plt.subplots()
         for key, value in otherApproachesSilverbox.items():
-            ax.scatter(value['num_parameters'], value['test_rmse'], color='b', label=value['abbreviation'])
+            ax.scatter(value['num_parameters'], value['test_rmse'], color=next(colors), label=value['abbreviation'])
         # Plot result current model here
-        ax.scatter(model_number_of_parameters, model_rmse, color='r', label='This paper')
+        ax.scatter(model_number_of_parameters, model_rmse, color='k', label='This paper')
         ax.set_title('Free-run simulation results')
         ax.set_xlabel('Number of parameters')
         ax.set_ylabel('rms error on test data (mV)')
