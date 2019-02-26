@@ -25,6 +25,13 @@ default_options_tcn = {
     'io_delay': 1
 }
 
+default_options_mlp = {
+    'hidden_size': 10,
+    'max_past_input': 3,
+    'ar': True,
+    'io_delay': 1
+}
+
 default_options_chen = {
     'seq_len': 1000,
     'train': {
@@ -78,9 +85,11 @@ default_options = {
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
-    'model': 'lstm',
+    'model': 'mlp',
     'tcn_options': default_options_tcn,
-    'lstm_options': default_options_lstm
+    'lstm_options': default_options_lstm,
+    'mlp_options': default_options_mlp,
+
 }
 
 
@@ -109,7 +118,7 @@ def clean_options(options):
         raise Exception("Unknown dataset: " + options["dataset"])
     dataset_options = options[options["dataset"] + "_options"]
 
-    models = ["tcn", "lstm"]
+    models = ["tcn", "lstm", "mlp"]
     if options["model"] not in models:
         raise Exception("Unknown model: " + options["model"])
     model_options = options[options["model"] + "_options"]

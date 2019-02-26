@@ -1,8 +1,6 @@
 import torch
 
-from model.lstm import LSTM
-from model.tcn import TCN
-from model.dynamic_model import DynamicModel
+from model import LSTM, MLP, TCN, DynamicModel
 import torch.optim as optim
 import os.path
 
@@ -25,6 +23,8 @@ class ModelState:
             nn_model = LSTM
         elif model == 'tcn':
             nn_model = TCN
+        elif model == 'mlp':
+            nn_model = MLP
         else:
             raise Exception("Model not implemented: {}".format(model))
         self.model = DynamicModel(nn_model, nu, ny, **model_options)
@@ -63,5 +63,3 @@ class ModelState:
                 'optimizer': self.optimizer.state_dict()
             },
             os.path.join(path, name))
-
-
