@@ -15,7 +15,6 @@ class ModelState:
     optimizer
     """
 
-
     def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options):
         torch.manual_seed(seed)
         if torch.cuda.is_available():
