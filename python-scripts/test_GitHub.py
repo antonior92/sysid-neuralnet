@@ -1,5 +1,6 @@
 # %% Test
 import torch
+import numpy as np
 from data_generation import DataLoaderExt, ChenDataset
 import matplotlib.pyplot as plt
 
@@ -18,6 +19,12 @@ def handlePlotly(fig, args):
         py.plot(plotly_fig)
     else:
         plt.show()
+
+def compute_rmse(y_pred, y):
+    y = y[0, 0, :].detach().numpy()
+    y_pred = y_pred[0, 0, :].detach().numpy()
+    rmse = np.sqrt(np.mean((y - y_pred)**2))
+    return rmse
 
 # Test
 for i, (u, y) in enumerate(loader_test):
@@ -57,6 +64,8 @@ for i, (u, y) in enumerate(loader_test):
 
     # Comparison with other methods Silverbox (from PhD thesis Anne Van Mulders)
     if model.mode == 'free-run-simulation':
+        model_rmse = compute_rmse(y_pred, y)
+        model_number_of_parameters = 1000 # TODO: Needs to be computed
         otherApproachesSilverbox = {
             'Hjalmarsson and Schoukens (2004)': {
                     'num_parameters': 5,
@@ -118,7 +127,7 @@ for i, (u, y) in enumerate(loader_test):
         for key, value in otherApproachesSilverbox.items():
             ax.scatter(value['num_parameters'], value['test_rmse'], color='b', label=value['abbreviation'])
         # Plot result current model here
-        # ax.scatter(number_of_parameters(model), rmse(model), color='r', label='This paper')
+        ax.scatter(model_number_of_parameters, model_rmse, color='r', label='This paper')
         ax.set_title('Free-run simulation results')
         ax.set_xlabel('Number of parameters')
         ax.set_ylabel('rms error on test data (mV)')
