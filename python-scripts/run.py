@@ -57,7 +57,6 @@ default_options_test = {
     'batch_size': 10,
 }
 
-
 default_options = {
     'cuda': False,
     'seed': 1111,
@@ -77,7 +76,6 @@ default_options = {
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm
 }
-
 
 def recursive_merge(default_dict, new_dict, path=None):
     # Stack overflow : https://stackoverflow.com/questions/7204805/dictionaries-of-dictionaries-merge/7205107#7205107
@@ -161,9 +159,9 @@ def get_commandline_args():
     # Options dict from commandline
     option_dict = json.loads(args['option_dict'])
 
-    command_lineoptions = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
+    commandline_options = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
 
-    return command_lineoptions, option_dict, option_file
+    return commandline_options, option_dict, option_file
 
 
 def get_options(option_file=None, *option_dicts):
@@ -259,12 +257,12 @@ def run(options=None, load_model=None, mode='interactive'):
                       loader_valid=loaders["valid"],
                       train_options=options["train_options"])
     elif mode == 'interactive':
-        return (modelstate.model, loaders, options)
+        return modelstate.model, loaders, options
 
 
 if __name__ == "__main__":
-    command_lineoptions, option_dict, option_file = get_commandline_args()
+    commandline_options, option_dict, option_file = get_commandline_args()
 
-    run_options = get_options(option_file, option_dict, command_lineoptions)
+    run_options = get_options(option_file, option_dict, commandline_options)
 
     run(run_options, load_model=run_options["load_model"], mode='script')
