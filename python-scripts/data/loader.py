@@ -10,7 +10,7 @@ def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
                                      batch_size=train_batch_size, shuffle=True, num_workers=4)
         loader_valid = DataLoaderExt(ChenDataset(seq_len=dataset_options['seq_len'], **dataset_options['valid']),
                                      batch_size=test_batch_size, shuffle=False, num_workers=4)
-        loader_valid = DataLoaderExt(ChenDataset(seq_len=dataset_options['seq_len'], **dataset_options['test']),
+        loader_test = DataLoaderExt(ChenDataset(seq_len=dataset_options['seq_len'], **dataset_options['test']),
                                      batch_size=test_batch_size, shuffle=False, num_workers=4)
     elif dataset == 'silverbox':
 
@@ -22,6 +22,5 @@ def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
                                      batch_size=test_batch_size, shuffle=False, num_workers=4)
     else:
         raise Exception("Dataset not implemented: {}".format(dataset))
-
 
     return {"train": loader_train, "valid": loader_valid, "test": loader_test}
