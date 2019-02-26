@@ -3,20 +3,23 @@ import torch.nn as nn
 
 
 class DynamicModel(nn.Module):
-    def __init__(self, model, num_inputs, num_outputs, ar, *args, **kwargs):
+    def __init__(self, model, num_inputs, num_outputs, ar, io_delay=0, *args, **kwargs):
         super(DynamicModel, self).__init__()
         if ar:
             num_inputs = num_inputs + num_outputs
         self.m = model(num_inputs, num_outputs, *args, **kwargs)
         self.ar = ar
+        self.io_delay = io_delay
         self.mode = 'one-step-ahead'
 
     def get_input(self, u, y):
+        io_delay = self.io_delay
+        u_delayed = torch.cat((torch.zeros_like(u[:, :, 0:io_delay]), u[:, :, :-io_delay],), -1) if io_delay > 0 else u
         if self.ar:
             y_delayed = torch.cat((torch.zeros_like(y[:, :, 0:1]), y[:, :, :-1],), -1)
-            x = torch.cat((u, y_delayed), 1)
+            x = torch.cat((u_delayed, y_delayed), 1)
         else:
-            x = u
+            x = u_delayed
         return x
 
     def one_step_ahead(self, u, y):

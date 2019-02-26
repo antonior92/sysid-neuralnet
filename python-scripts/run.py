@@ -13,6 +13,7 @@ from train import run_train
 default_options_lstm = {
     'hidden_size': 5,
     'ar': True,
+    'io_delay': 1
 }
 
 default_options_tcn = {
@@ -20,7 +21,8 @@ default_options_tcn = {
     'dropout': 0.8,
     'n_channels': [16, 32],
     'dilation_sizes': [1, 1],
-    'ar': True
+    'ar': True,
+    'io_delay': 1
 }
 
 default_options_chen = {
@@ -80,6 +82,7 @@ default_options = {
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm
 }
+
 
 def recursive_merge(default_dict, new_dict, path=None):
     # Stack overflow : https://stackoverflow.com/questions/7204805/dictionaries-of-dictionaries-merge/7205107#7205107
