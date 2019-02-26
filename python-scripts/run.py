@@ -7,8 +7,8 @@ import os.path
 import data.loader as loader
 from model.model_state import ModelState
 
-from test import run_test
-from train import run_train
+import test
+import train
 
 default_options_lstm = {
     'hidden_size': 5,
@@ -260,13 +260,13 @@ def run(options=None, load_model=None, mode='interactive'):
 
         # Run model
         if options["evaluate_model"]:
-            run_test(epoch=current_epoch,
-                     logdir = options["logdir"],
-                     loader_test=loaders["test"],
-                     model=modelstate.model,
-                     test_options=options["test_options"])
+            test.run_test(epoch=current_epoch,
+                          logdir=options["logdir"],
+                          loader_test=loaders["test"],
+                          model=modelstate.model,
+                          test_options=options["test_options"])
         else:
-            run_train(start_epoch=current_epoch,
+            train.run_train(start_epoch=current_epoch,
                       cuda=options["cuda"],
                       modelstate=modelstate,
                       logdir=options["logdir"],

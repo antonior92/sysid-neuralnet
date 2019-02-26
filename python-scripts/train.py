@@ -1,9 +1,12 @@
 # %% Initialization
 import torch.nn as nn
-
+import torch
 
 def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid, train_options):
     try:
+        if torch.cuda.is_available():
+            if not cuda:
+                print("WARNING: You have a CUDA device, so you should probably run with --cuda")
         # %% Train
         def validate():
             modelstate.model.eval()
