@@ -59,20 +59,20 @@ class TemporalBlock(nn.Module):
 
 
 class TCN(nn.Module):
-    def __init__(self, num_inputs, num_outputs, num_channels, dilation_sizes=None, kernel_size=16, dropout=0.2):
+    def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2):
         super(TCN, self).__init__()
         layers = []
-        num_levels = len(num_channels)
+        num_levels = len(n_channels)
         if dilation_sizes is None:
             dilation_sizes = [2 ** i for i in range(num_levels)]
         for i in range(num_levels):
             dilation_size = dilation_sizes[i]
-            in_channels = num_inputs if i == 0 else num_channels[i-1]
-            out_channels = num_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, kernel_size, stride=1, dilation=dilation_size,
-                                     padding=(kernel_size-1) * dilation_size, dropout=dropout)]
+            in_channels = num_inputs if i == 0 else n_channels[i-1]
+            out_channels = n_channels[i]
+            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1, dilation=dilation_size,
+                                     padding=(ksize-1) * dilation_size, dropout=dropout)]
         self.network = nn.Sequential(*layers)
-        self.linear = nn.Linear(num_channels[-1], num_outputs)
+        self.linear = nn.Linear(n_channels[-1], num_outputs)
         self.init_weights()
 
     def init_weights(self):
