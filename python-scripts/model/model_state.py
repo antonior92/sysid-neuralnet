@@ -36,7 +36,6 @@ class ModelState:
         self.optimizer = getattr(optim, optimizer['optim'])(self.model.parameters(), lr=init_lr)
 
     def load_model(self, path, name='model.pth'):
-
         try:
             file = os.path.join(path, name)
             ckpt = torch.load(file)

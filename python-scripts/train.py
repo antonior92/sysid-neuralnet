@@ -52,6 +52,7 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
         all_losses = []
         all_vlosses = []
         best_vloss = 1e10
+        modelstate.model.set_mode(train_options['training_mode'])
         for epoch in range(start_epoch, start_epoch + train_options["epochs"]+1):
             # Train and validate
             loss = train(epoch)
