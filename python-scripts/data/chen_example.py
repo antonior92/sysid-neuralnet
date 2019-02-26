@@ -9,7 +9,7 @@ Neural Networks, International Journal of Control 51 (6) (1990) 1191–
 import numpy as np
 import numpy.random as rd
 
-from data_generation.data_generator import DatasetExt
+from data.dataset_ext import DatasetExt
 
 
 class ChenDataset(DatasetExt):

@@ -4,10 +4,28 @@
 import argparse
 import json
 import copy
+import time
+import os.path
+
+import data.loader as loader
+from model.model_state import ModelState
+
+from test import run_test
+from train import run_train
 
 default_options_lstm = {
-    'hidden_size': 5
+    'hidden_size': 5,
+    'ar': True,
 }
+
+default_options_tcn = {
+    'ksize': 3,
+    'dropout': 0.8,
+    'n_channels': [16, 32],
+    'dilation_sizes': [1, 1],
+    'ar': True
+}
+
 
 default_options_chen = {
     'seq_len': 1000,
@@ -21,18 +39,10 @@ default_options_chen = {
     }
 }
 
-default_options_tcn = {
-    'ksize': 3,
-    'dropout': 0.8,
-    'n_channels': [16, 32],
-    'dilation_sizes': [1, 1],
-}
-
 default_options_silverbox = {'seq_len': 1000}
 
-default_options_training = {
-        'optim': 'Adam',
-        'lr': 0.001,
+default_options_train = {
+        'init_lr': 0.001,
         'min_lr': 1e-6,
         'batch_size': 3,
         'epochs': 1000,
@@ -41,29 +51,39 @@ default_options_training = {
         'log_interval': 1
 }
 
+
+default_options_optimizer = {
+    'optim': 'Adam',
+}
+
 default_options_test = {
     'plot': True,
     'plotly': True,
-    'eval_batch_size': 10,
+    'batch_size': 10,
 }
 
 
 default_options = {
-        'cuda': False,
-        'seed': 1111,
-        'logdir': None,
-        'load_model': None,
-        'evaluate_model': False,
+    'cuda': False,
+    'seed': 1111,
+    'logdir': None,
+    'run_name': None,
+    'load_model': None,
+    'evaluate_model': False,
 
-        'ar': True,
-        'dataset': "SilverBox",
-        'model': 'lstm',
-        'training_options': default_options_training,
-        'tcn_options': default_options_tcn,
-        'lstm_options': default_options_lstm,
-        'chen_options': default_options_chen,
-        'silverbox_options': default_options_silverbox,
-        'test_options': default_options_test
+    'train_options': default_options_train,
+    'test_options': default_options_test,
+
+    'optimizer': default_options_optimizer,
+
+    'dataset': "silverbox",
+
+    'chen_options': default_options_chen,
+    'silverbox_options': default_options_silverbox,
+
+    'model': 'lstm',
+    'tcn_options': default_options_tcn,
+    'lstm_options': default_options_lstm
 }
 
 
@@ -85,7 +105,30 @@ def recursive_merge(default_dict, new_dict, path=None):
     return default_dict
 
 
-def main():
+def clean_options(options):
+    # Remove unused options
+    datasets = ["chen", 'silverbox']
+    if options["dataset"] not in datasets:
+        raise Exception("Unknown dataset: " + options["dataset"])
+    dataset_options = options[options["dataset"] + "_options"]
+
+    models = ["tcn", "lstm"]
+    if options["model"] not in models:
+        raise Exception("Unknown model: " + options["model"])
+    model_options = options[options["model"] + "_options"]
+
+    remove_options = [name + "_options" for name in datasets + models]
+    for key in dict(options):
+        if key in remove_options:
+            del options[key]
+
+    # Specify used dataset and model options
+    options["dataset_options"] = dataset_options
+    options["model_options"] = model_options
+    return options
+
+
+def get_options():
     def str2bool(v):
         if v.lower() in ('yes', 'true', 't', 'y', '1'):
             return True
@@ -99,8 +142,10 @@ def main():
     parser.add_argument('--logdir', type=str,
                         help='Directory for logs')
 
-    parser.add_argument('--load_ckpt', type=str, help='Path to a saved model, overrides ALL other options \\'
-                                                      'except the evaluate model flag, cuda flag and seed')
+    parser.add_argument('--run_name', type=str,
+                        help='The name of this run')
+
+    parser.add_argument('--load_model', type=str, help='Path to a saved model')
 
     parser.add_argument('--evaluate_model', type=str2bool, const=True, nargs='?', help='Evaluate model')
 
@@ -135,20 +180,84 @@ def main():
     args = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
     merged_options = {**merged_options, **args}
 
-    options_copy = copy.deepcopy(merged_options)
+
+    # Clear away unused fields
+    options = clean_options(merged_options)
+
+    ctime = time.strftime("%c")
+
+    if options["logdir"] is None:
+        options["logdir"] = "log"
+
+    if options["run_name"] is None:
+        if options["evaluate_model"]:
+            options["run_name"] = "eval_"+ctime
+        else:
+            options["run_name"] = "train_"+ctime
+
+    options["logdir"] = os.path.join(options["logdir"], options["run_name"])
+
+    return options
 
 
-    # train(used_options=options_copy, **options)
+
+def main():
+
+    options = get_options()
+
+    if options["load_model"] is not None:
+        file = open(os.path.join(os.path.dirname(options["load_model"]), 'options.txt'), "r")
+        ckpt_options = json.loads(file.read())
+
+        options["optimizer"] = ckpt_options["optimizer"]
+        options["model"] = ckpt_options["model"]
+        options["model_options"] = ckpt_options["model_options"]
+        options["dataset"] = ckpt_options["dataset"]
+        options["dataset_options"] = ckpt_options["dataset_options"]
+
+    # Specifying datasets
+    loaders = loader.load_dataset(dataset=options["dataset"],
+                                  dataset_options=options["dataset_options"],
+                                  train_batch_size=options["train_options"]["batch_size"],
+                                  test_batch_size=options["test_options"]["batch_size"])
 
 
+    # Define model
+    modelstate = ModelState(seed=options["seed"],
+                            cuda=options["cuda"],
+                            nu=loaders["train"].nu, ny=loaders["train"].ny,
+                            optimizer=options["optimizer"],
+                            init_lr=options["train_options"]["init_lr"],
+                            model=options["model"],
+                            model_options=options["model_options"])
 
+    # Restore model
+    if options["load_model"] is not None:
+        current_epoch = modelstate.load_model(options["load_model"])
+    else:
+        current_epoch = 0
 
+    # Write options used to file
+    os.makedirs(os.path.dirname(options["logdir"] + "/options.txt"), exist_ok=True)
+    with open(options["logdir"] + "/options.txt", "w+") as f:
+        f.write(json.dumps(options, indent=1))
+        print(json.dumps(options, indent=1))
 
-
-
-
-
-
+    #Run model
+    if options["evaluate_model"]:
+        run_test(epoch=current_epoch,
+                 logdir = options["logdir"],
+                 loader_test=loaders["test"],
+                 model=modelstate.model,
+                 test_options=options["test_options"])
+    else:
+        run_train(start_epoch=current_epoch,
+                  cuda=options["cuda"],
+                  modelstate=modelstate,
+                  logdir=options["logdir"],
+                  loader_train=loaders["train"],
+                  loader_valid=loaders["valid"],
+                  train_options=options["train_options"])
 
 
 

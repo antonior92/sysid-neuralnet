@@ -6,7 +6,7 @@ import urllib
 import urllib.request
 import zipfile
 
-from data_generation.data_generator import DatasetExt
+from data.dataset_ext import DatasetExt
 
 
 # based on https://github.com/locuslab/TCN/blob/master/TCN/lambada_language/utils.py
