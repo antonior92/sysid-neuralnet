@@ -32,6 +32,10 @@ default_options_chen = {
     'valid': {
         'ntotbatch': 10,
         'seed': 2
+    },
+    'test': {
+        'ntotbatch': 10,
+        'seed': 2
     }
 }
 
