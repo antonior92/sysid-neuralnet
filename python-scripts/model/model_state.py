@@ -35,7 +35,7 @@ class ModelState:
         # Optimization parameters
         self.optimizer = getattr(optim, optimizer['optim'])(self.model.parameters(), lr=init_lr)
 
-    def load_model(self, path, name='model.pth'):
+    def load_model(self, path, name='model.pt'):
         try:
             file = os.path.join(path, name)
             ckpt = torch.load(file)
@@ -54,11 +54,13 @@ class ModelState:
                 raise Exception("Could not find model: " + path)
         return epoch
 
-    def save_model(self, epoch, path, name='model.pth'):
+    def save_model(self, epoch, vloss,  path, name='model.pt'):
 
         torch.save({
                 'epoch': epoch,
                 'model': self.model.state_dict(),
-                'optimizer': self.optimizer.state_dict()
+                'optimizer': self.optimizer.state_dict(),
+                'vloss':vloss
             },
             os.path.join(path, name))
+
