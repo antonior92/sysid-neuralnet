@@ -1,6 +1,3 @@
-
-
-
 import argparse
 import json
 import copy
@@ -26,7 +23,6 @@ default_options_tcn = {
     'ar': True
 }
 
-
 default_options_chen = {
     'seq_len': 1000,
     'train': {
@@ -51,7 +47,6 @@ default_options_train = {
         'log_interval': 1
 }
 
-
 default_options_optimizer = {
     'optim': 'Adam',
 }
@@ -70,14 +65,11 @@ default_options = {
     'run_name': None,
     'load_model': None,
     'evaluate_model': False,
-
     'train_options': default_options_train,
     'test_options': default_options_test,
-
     'optimizer': default_options_optimizer,
 
     'dataset': "silverbox",
-
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
@@ -101,7 +93,7 @@ def recursive_merge(default_dict, new_dict, path=None):
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
         else:
             raise Exception('Default value not found at %s' % '.'.join(path + [str(key)]))
-            #default_dict[key] = new_dict[key]
+            # default_dict[key] = new_dict[key]
     return default_dict
 
 
@@ -163,18 +155,18 @@ def get_commandline_args():
 
     args = vars(parser.parse_args())
 
-    #Options file
+    # Options file
     option_file = args['option_file']
 
-    #Options dict from commandline
+    # Options dict from commandline
     option_dict = json.loads(args['option_dict'])
 
     command_lineoptions = {k: v for k, v in args.items() if v is not None and k != "option_file" and k != "option_dict"}
 
     return command_lineoptions, option_dict, option_file
 
-def get_options(option_file = None, *option_dicts):
 
+def get_options(option_file=None, *option_dicts):
     merged_options = copy.deepcopy(default_options)
 
     # Options specified in file
@@ -183,6 +175,7 @@ def get_options(option_file = None, *option_dicts):
         options = json.loads(file.read())
         merged_options = recursive_merge(merged_options, options)
 
+    # Options specified in commandline dict
     for option_dict in option_dicts:
         merged_options = recursive_merge(merged_options, option_dict)
 
@@ -228,7 +221,6 @@ def run(options=None, load_model=None, mode='interactive'):
                                   train_batch_size=options["train_options"]["batch_size"],
                                   test_batch_size=options["test_options"]["batch_size"])
 
-
     # Define model
     modelstate = ModelState(seed=options["seed"],
                             cuda=options["cuda"],
@@ -251,7 +243,7 @@ def run(options=None, load_model=None, mode='interactive'):
             f.write(json.dumps(options, indent=1))
             print(json.dumps(options, indent=1))
 
-        #Run model
+        # Run model
         if options["evaluate_model"]:
             run_test(epoch=current_epoch,
                      logdir = options["logdir"],

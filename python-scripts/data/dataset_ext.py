@@ -1,12 +1,7 @@
 from torch.utils.data import DataLoader, Dataset
 
 
-
-
-
-
 class DatasetExt(Dataset):
-
     @property
     def data_shape(self):
         raise Exception("Not implemented")
