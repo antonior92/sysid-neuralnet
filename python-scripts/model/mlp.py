@@ -12,7 +12,10 @@ class MLP(nn.Module):
         sigmoid = nn.Sigmoid()
         conv2 = nn.Conv1d(hidden_size, num_outputs, 1)
 
-        self.net = nn.Sequential(conv1, chomp, sigmoid, conv2)
+        if max_past_input > 1:
+            self.net = nn.Sequential(conv1, chomp, sigmoid, conv2)
+        else:
+            self.net = nn.Sequential(conv1, sigmoid, conv2)
 
     def forward(self, x):
         return self.net(x)
