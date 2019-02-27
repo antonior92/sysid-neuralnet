@@ -3,12 +3,14 @@ import json
 import copy
 import time
 import os.path
+import sys
 
-import data.loader as loader
-from model.model_state import ModelState
 
 import test
 import train
+from logger import Logger
+import data.loader as loader
+from model.model_state import ModelState
 
 default_options_lstm = {
     'hidden_size': 5,
@@ -27,7 +29,7 @@ default_options_tcn = {
 
 default_options_mlp = {
     'hidden_size': 10,
-    'max_past_input': 3,
+    'max_past_input': 1,
     'ar': True,
     'io_delay': 1
 }
@@ -83,10 +85,12 @@ default_options = {
     'optimizer': default_options_optimizer,
 
     'dataset': "silverbox",
+    'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
     'model': 'mlp',
+    'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
     'mlp_options': default_options_mlp,
@@ -94,21 +98,23 @@ default_options = {
 }
 
 
-def recursive_merge(default_dict, new_dict, path=None):
+def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
     # Stack overflow : https://stackoverflow.com/questions/7204805/dictionaries-of-dictionaries-merge/7205107#7205107
     if path is None:
         path = []
     for key in new_dict:
         if key in default_dict:
             if isinstance(default_dict[key], dict) and isinstance(new_dict[key], dict):
-                recursive_merge(default_dict[key], new_dict[key], path + [str(key)])
+                recursive_merge(default_dict[key], new_dict[key], path + [str(key)], allow_new=allow_new)
             elif isinstance(default_dict[key], dict) or isinstance(new_dict[key], dict):
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
             else:
                 default_dict[key] = new_dict[key]
         else:
-            raise Exception('Default value not found at %s' % '.'.join(path + [str(key)]))
-            # default_dict[key] = new_dict[key]
+            if allow_new:
+                default_dict[key] = new_dict[key]
+            else:
+                raise Exception('Default value not found at %s' % '.'.join(path + [str(key)]))
     return default_dict
 
 
@@ -130,8 +136,8 @@ def clean_options(options):
             del options[key]
 
     # Specify used dataset and model options
-    options["dataset_options"] = dataset_options
-    options["model_options"] = model_options
+    options["dataset_options"] = recursive_merge(dataset_options, options["dataset_options"], allow_new=True)
+    options["model_options"] = recursive_merge(options["model_options"], model_options, allow_new=True)
     return options
 
 
@@ -194,7 +200,7 @@ def get_options(option_file=None, *option_dicts):
     for option_dict in option_dicts:
         merged_options = recursive_merge(merged_options, option_dict)
 
-    # Clear away unused fields
+    # Clear away unused fields and merge model options
     options = clean_options(merged_options)
 
     ctime = time.strftime("%c")
@@ -258,6 +264,9 @@ def run(options=None, load_model=None, mode='interactive'):
             f.write(json.dumps(options, indent=1))
             print(json.dumps(options, indent=1))
 
+        # Set stdout to print to file and console
+        sys.stdout = Logger(options["logdir"])
+
         # Run model
         if options["evaluate_model"]:
             test.run_test(epoch=current_epoch,
@@ -267,12 +276,12 @@ def run(options=None, load_model=None, mode='interactive'):
                           test_options=options["test_options"])
         else:
             train.run_train(start_epoch=current_epoch,
-                      cuda=options["cuda"],
-                      modelstate=modelstate,
-                      logdir=options["logdir"],
-                      loader_train=loaders["train"],
-                      loader_valid=loaders["valid"],
-                      train_options=options["train_options"])
+                            cuda=options["cuda"],
+                            modelstate=modelstate,
+                            logdir=options["logdir"],
+                            loader_train=loaders["train"],
+                            loader_valid=loaders["valid"],
+                            train_options=options["train_options"])
     elif mode == 'interactive':
         return modelstate.model, loaders, options
 
