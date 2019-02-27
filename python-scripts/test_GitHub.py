@@ -63,7 +63,7 @@ for i, (u, y) in enumerate(loader_test):
     ax.set_ylabel('Amplitude (V)')
     handlePlotly(fig, args)
 
-    # Comparison with other methods Silverbox (from PhD thesis Anne Van Mulders)
+    # Comparison with other methods Silverbox (mostly from PhD thesis Anne Van Mulders)
     if model.mode == 'free-run-simulation':
         model_rmse = compute_rmse(y_pred, y)
         model_number_of_parameters = 1000 # TODO: Needs to be computed
@@ -113,15 +113,20 @@ for i, (u, y) in enumerate(loader_test):
                     'test_rmse': 0.34,
                     'abbreviation': 'sigm-NLSS'
             },
-    #        'Espinoza (2006)': {                           # prediction mode?
-    #                'num_parameters': 190,
-    #                'test_rmse': 0.27,
-    #                'abbreviation': 'PWL-LSSVM-NARX'
-    #        },
+            'Espinoza (2006)': {              # prediction mode? No, in Espinoza et al. 2005, this result appears in the simulation result row in the table
+                    'num_parameters': 190,
+                    'test_rmse': 0.27,
+                    'abbreviation': 'PWL-LSSVM-NARX'
+            },
             'Srager et al. (2004)': {
                     'num_parameters': 600,
                     'test_rmse': 7.8,
                     'abbreviation': 'MLP-ANN'
+            },
+            'Pepona et al. (2011)': {
+                    'num_parameters': 18,
+                    'test_rmse': 4.08,
+                    'abbreviation': 'PWA-LFR'
             }
         }
         colors = iter(cm.rainbow(np.linspace(0, 1, len(otherApproachesSilverbox))))
