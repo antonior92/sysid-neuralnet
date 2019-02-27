@@ -8,7 +8,7 @@ import sys
 
 import test
 import train
-from logger import Logger
+from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
 
@@ -265,7 +265,7 @@ def run(options=None, load_model=None, mode='interactive'):
             print(json.dumps(options, indent=1))
 
         # Set stdout to print to file and console
-        sys.stdout = Logger(options["logdir"])
+        set_redirects(options["logdir"])
 
         # Run model
         if options["evaluate_model"]:
