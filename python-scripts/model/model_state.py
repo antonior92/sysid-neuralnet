@@ -43,7 +43,6 @@ class ModelState:
             self.optimizer.load_state_dict(ckpt["optimizer"])
             epoch = ckpt['epoch']
         except Exception as e:
-            print(e)
             try:
                 file = path
                 ckpt = torch.load(file)

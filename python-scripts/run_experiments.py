@@ -1,7 +1,7 @@
 from multiprocessing import Process
 import run
 import time
-
+import math
 
 class tcn_model:
     def __init__(self,  ksize = 3, dropout = 0.2, n_channels = [16, 32], dilation_sizes = [1, 1],  ar= True):
@@ -35,17 +35,22 @@ mlp_max_past_input_list = [32*2**i for i in range(5)]
 mlp_hidden_size_list = [8*2**i for i in range(6)]
 io_delay_list  = [0, 1, 2, 3]
 
-for mlp_hidden_size in mlp_hidden_size_list:
-    for mlp_max_past_input in mlp_max_past_input_list:
-        option_dicts.append({"logdir": "log/mlp_networks_2", "cuda":True,
-                             "dataset": "silverbox", "model": "mlp",
-                             "train_options": {},
-                             "mlp_options": {"hidden_size": mlp_hidden_size,
-                                             "max_past_input": mlp_max_past_input}})
+seqlen_list    = [32*2**i for i in range(6)]
+batchsize_list = [8*2**i for i in range(6)]
+lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
+
+for seqlen in seqlen_list:
+    for batch_size in batchsize_list:
+        for lr in lr_list:
+            option_dicts.append({"logdir": "log/batchsizes", "cuda": True,
+                                 "dataset": "silverbox", "model": "mlp",
+                                 "train_options": {"batch_size": batch_size, "init_lr": lr},
+                                 "silverbox_options": {"seq_len": seqlen}
+                                 }
+                                )
 
 
-#seqlen_list    = [32*2**i for i in range(6)]
-#batchsize_list = [8*2**i  for i in range(6)]
+
 
 
 num_processes = 8

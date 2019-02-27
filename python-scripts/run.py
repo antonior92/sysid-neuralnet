@@ -28,8 +28,8 @@ default_options_tcn = {
 }
 
 default_options_mlp = {
-    'hidden_size': 10,
-    'max_past_input': 1,
+    'hidden_size': 16,
+    'max_past_input': 32,
     'ar': True,
     'io_delay': 0
 }

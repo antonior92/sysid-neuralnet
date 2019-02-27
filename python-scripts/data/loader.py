@@ -18,8 +18,12 @@ def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
                                      batch_size=train_batch_size, shuffle=False, num_workers=4)
         loader_valid = DataLoaderExt(SilverBoxDataset(**dataset_options, split='valid'),
                                      batch_size=test_batch_size, shuffle=False, num_workers=4)
-        loader_test = DataLoaderExt(SilverBoxDataset(**dataset_options, split='test'),
-                                     batch_size=test_batch_size, shuffle=False, num_workers=4)
+
+        # TODO: Hack change this
+        test_dataset_options = dict(dataset_options)
+        test_dataset_options["seq_len"] = 36000
+        loader_test = DataLoaderExt(SilverBoxDataset(**test_dataset_options, split='test'),
+                                    batch_size=test_batch_size, shuffle=False, num_workers=4)
     else:
         raise Exception("Dataset not implemented: {}".format(dataset))
 
