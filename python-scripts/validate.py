@@ -6,8 +6,19 @@ import json
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
-dir_path = 'log/mlp_networks'
+plotly = False
+def show_fig(fig):
+    if plotly:
+        import plotly.tools as tls
+        import plotly.offline as py
+        plotly_fig = tls.mpl_to_plotly(fig)
+        py.plot(plotly_fig)
+    else:
+        plt.show()
+
+dir_path = 'mlp_networks'
 
 # Get files names
 folder_list = glob.glob(os.path.join(dir_path, 'train_*'))
@@ -37,15 +48,25 @@ for folder in folder_list:
     model_file = os.path.join(folder, 'best_model.pt')
     with open(options_file, 'r') as f:
         options_dict = json.loads(f.read())
-    # Gets model info
-    model_pth = torch.load(model_file)
-    model_dict = {'epoch': model_pth['epoch'], 'vloss': model_pth['vloss']}
+    try:
+        # Gets model info
+        model_pth = torch.load(model_file,  map_location='cpu')
+        model_dict = {'epoch': model_pth['epoch'], 'vloss': model_pth['vloss']}
+    except:
+        model_dict = {}
     # Generate dataframe
     d = single_indexed_dict(dict(options_dict, **model_dict))
     df += [pd.DataFrame(d, index=[i])]
     i += 1
 results = pd.concat(df, sort=False)
 
+
+# Get models that fail
+failed_executions = results[np.isnan(results.vloss)]
+
+
 # Plot example
-ax = sns.lineplot(x='model_options_io_delay', y='vloss', hue='model_options_max_past_input', data=results)
-plt.show()
+fig, ax = plt.subplots()
+ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',data=results[results.model_options_io_delay==0], legend='full')
+plt.legend(bbox_to_anchor=(1.1, 1.05))
+show_fig(fig)
