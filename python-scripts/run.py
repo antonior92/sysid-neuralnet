@@ -15,7 +15,7 @@ from model.model_state import ModelState
 default_options_lstm = {
     'hidden_size': 5,
     'ar': True,
-    'io_delay': 1
+    'io_delay': 0
 }
 
 default_options_tcn = {
@@ -24,14 +24,14 @@ default_options_tcn = {
     'n_channels': [16, 32],
     'dilation_sizes': [1, 1],
     'ar': True,
-    'io_delay': 1
+    'io_delay': 0
 }
 
 default_options_mlp = {
     'hidden_size': 10,
     'max_past_input': 1,
     'ar': True,
-    'io_delay': 1
+    'io_delay': 0
 }
 
 default_options_chen = {
