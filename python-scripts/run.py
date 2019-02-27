@@ -46,7 +46,7 @@ default_options_chen = {
     },
     'test': {
         'ntotbatch': 10,
-        'seed': 2
+        'seed': 3
     }
 }
 
@@ -56,7 +56,7 @@ default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
         'batch_size': 3,
-        'epochs': 1000,
+        'epochs': 10000,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
         'log_interval': 1,
