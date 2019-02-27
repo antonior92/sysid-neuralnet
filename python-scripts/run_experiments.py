@@ -31,26 +31,24 @@ option_dicts = []
 
 
 
-mlp_max_past_input_list = [2**i for i in range(5)]
+mlp_max_past_input_list = [32*2**i for i in range(5)]
 mlp_hidden_size_list = [8*2**i for i in range(6)]
 io_delay_list  = [0, 1, 2, 3]
 
 for mlp_hidden_size in mlp_hidden_size_list:
     for mlp_max_past_input in mlp_max_past_input_list:
-        for io_delay in io_delay_list:
-            option_dicts.append({"logdir": "log/mlp_networks", "cuda":True,
-                                 "dataset": "silverbox", "model": "mlp",
-                                 "train_options": {},
-                                 "mlp_options": {"hidden_size":mlp_hidden_size,
-                                                 "max_past_input":mlp_max_past_input,
-                                                 "io_delay":io_delay}})
+        option_dicts.append({"logdir": "log/mlp_networks_2", "cuda":True,
+                             "dataset": "silverbox", "model": "mlp",
+                             "train_options": {},
+                             "mlp_options": {"hidden_size": mlp_hidden_size,
+                                             "max_past_input": mlp_max_past_input}})
 
 
 #seqlen_list    = [32*2**i for i in range(6)]
 #batchsize_list = [8*2**i  for i in range(6)]
 
 
-num_processes = 4
+num_processes = 8
 
 processes = []
 while len(option_dicts) > 0:
