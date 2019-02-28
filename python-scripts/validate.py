@@ -18,11 +18,10 @@ def show_fig(fig):
     else:
         plt.show()
 
-dir_path = 'mlp_networks'
 
 # Get files names
-folder_list = glob.glob(os.path.join(dir_path, 'train_*'))
-
+folder_list = glob.glob(os.path.join('log/mlp_networks', 'train_*'))
+folder_list += glob.glob(os.path.join('log/mlp_networks_2', 'train_*'))
 
 # Parse dictionaries
 def single_indexed_dict(in_dict, d=None, name=''):
@@ -67,6 +66,6 @@ failed_executions = results[np.isnan(results.vloss)]
 
 # Plot example
 fig, ax = plt.subplots()
-ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',data=results[results.model_options_io_delay==0], legend='full')
+ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',data=results[results.model_options_io_delay==0][results.model_options_max_past_input < 100][results.model_options_hidden_size < 100], legend='full')
 plt.legend(bbox_to_anchor=(1.1, 1.05))
 show_fig(fig)

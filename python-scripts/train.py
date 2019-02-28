@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch
 import time
 
-def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid, train_options):
 
+def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid, train_options):
     def validate():
         modelstate.model.eval()
         total_vloss = 0
@@ -52,7 +52,7 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
         if not cuda:
             print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-    # %% Train
+    # Train
     epoch = start_epoch
     vloss = validate()
     all_losses = []
@@ -90,7 +90,6 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
             # Early stoping
             if lr < train_options['min_lr']:
                 break
-
         modelstate.save_model(epoch, vloss, time.clock() - start_time, logdir, 'final_model.pt')
     except KeyboardInterrupt:
         print('-' * 89)

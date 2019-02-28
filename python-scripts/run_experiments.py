@@ -4,22 +4,17 @@ import time
 import math
 
 
-
 def sub_run(dict):
     options = run.create_full_options_dict(dict)
     run.run(options, mode_interactive=False)
 
+
 option_dicts = []
-
-
-
-
-
 mlp_max_past_input_list = [32*2**i for i in range(5)]
 mlp_hidden_size_list = [8*2**i for i in range(6)]
-io_delay_list  = [0, 1, 2, 3]
+io_delay_list = [0, 1, 2, 3]
 
-seqlen_list    = [32*2**i for i in range(6)]
+seqlen_list = [32*2**i for i in range(6)]
 batchsize_list = [8*2**i for i in range(6)]
 lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
@@ -34,11 +29,7 @@ for seqlen in seqlen_list:
                                 )
 
 
-
-
-
 num_processes = 1
-
 processes = []
 while len(option_dicts) > 0:
     opt_dict = option_dicts.pop()

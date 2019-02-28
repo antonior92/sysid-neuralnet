@@ -3,9 +3,6 @@ import json
 import copy
 import time
 import os.path
-import sys
-
-
 import test
 import train
 from logger import set_redirects
@@ -241,8 +238,6 @@ def run(options=None, load_model=None, mode_interactive=True):
         # Set stdout to print to file and console
         set_redirects(options["logdir"])
 
-
-
     if load_model is not None:
         file = open(os.path.join(os.path.dirname(load_model), 'options.txt'), "r")
         ckpt_options = json.loads(file.read())
@@ -277,7 +272,6 @@ def run(options=None, load_model=None, mode_interactive=True):
         current_epoch = 0
 
     if not mode_interactive:
-
         with open(os.path.join(options["logdir"], "options.txt"), "w+") as f:
             f.write(json.dumps(options, indent=1))
             print(json.dumps(options, indent=1))
@@ -302,8 +296,8 @@ def run(options=None, load_model=None, mode_interactive=True):
 
 
 if __name__ == "__main__":
+    # Get options
     commandline_options, option_dict, option_file = get_commandline_args()
-
     run_options = create_full_options_dict(commandline_options, option_dict, option_file=option_file)
-
+    # Run
     run(run_options, load_model=run_options["load_model"], mode_interactive=False)
