@@ -30,18 +30,18 @@ class ModelState:
     def load_model(self, path, name='model.pt'):
         try:
             file = os.path.join(path, name)
-            ckpt = torch.load(file)
+            ckpt = torch.load(file, map_location=lambda storage, loc: storage)
             self.model.load_state_dict(ckpt["model"])
             self.optimizer.load_state_dict(ckpt["optimizer"])
             epoch = ckpt['epoch']
-        except Exception as e:
+        except NotADirectoryError as e:
             try:
                 file = path
-                ckpt = torch.load(file)
+                ckpt = torch.load(file, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["model"])
                 self.optimizer.load_state_dict(ckpt["optimizer"])
                 epoch = ckpt['epoch']
-            except Exception as e:
+            except NotADirectoryError as e:
                 raise Exception("Could not find model: " + path)
         return epoch
 

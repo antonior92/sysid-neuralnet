@@ -7,6 +7,7 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
+from model.utils import RunMode
 
 default_options_lstm = {
     'hidden_size': 5,
@@ -202,13 +203,12 @@ def create_full_options_dict(*option_dicts):
 
     # Options specified in commandline dict
     for option_dict in reversed(option_dicts):
-        if isinstance(option_dict,str):
-            with open(option_dict, "r") as file:
-                option = json.loads(file.read())
-        else:
-            option = option_dict
+        if option_dict is not None:
+            if isinstance(option_dict, str):
+                with open(option_dict, "r") as file:
+                    option_dict = json.loads(file.read())
 
-        merged_options = recursive_merge(merged_options, option)
+            merged_options = recursive_merge(merged_options, option_dict)
 
     # Clear away unused fields and merge model options
     options = clean_options(merged_options)

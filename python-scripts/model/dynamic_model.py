@@ -1,50 +1,48 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from . import MLP
+from model.utils import RunMode
 from .utils import copy_module_params
 import time
 
 
+
+
+
 class DynamicModel(nn.Module):
-    def __init__(self, model, num_inputs, num_outputs, ar, io_delay=0,
-                 mode='one-step-ahead', *args, **kwargs):
+    def __init__(self, model, num_inputs, num_outputs, ar, io_delay, *args, **kwargs):
         super(DynamicModel, self).__init__()
         # Save parameters
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
-        self.model = model
         self.args = args
         self.kwargs = kwargs
         self.ar = ar
         self.io_delay = io_delay
         # Initialize model
-        self.mode = None
-        self.m = None
-        self.receptive_field = None
-        self.set_mode(mode)
-
-    def set_mode(self, mode):
-        if self.model == 'mlp':
-            padding = 'none' if mode == 'free-run-simulation' else 'same'
-            num_inputs = self.num_inputs + self.num_outputs if self.ar else self.num_inputs
-            m = MLP(num_inputs, self.num_outputs, padding=padding,
-                    *self.args, **self.kwargs)
-            receptive_field = m.receptive_field
+        self.mode = RunMode.ONE_STEP_AHEAD
+        if model == 'mlp':
+            self.m = MLP(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
+            self.m.set_mode(self.mode)
         else:
             raise Exception("Unimplemented model")
-        if self.mode is not None:
-            m = copy_module_params(self.m, m)
+
+
+    @property
+    def num_model_inputs(self):
+        return self.num_inputs + self.num_outputs if self.ar else self.num_inputs
+
+    def set_mode(self, mode):
         self.mode = mode
-        self.m = m
-        self.receptive_field = receptive_field
+        self.m.set_mode(mode)
 
     def one_step_ahead(self, u, y=None):
-        io_delay = self.io_delay
-        n_batches, n_inputs, seq_len = u.size()
-        n_outputs = self.num_outputs
-        u_delayed = torch.cat((torch.zeros((n_batches, n_inputs, io_delay)), u[:, :, :-io_delay],), -1) if io_delay > 0 else u
+
+        u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
+
         if self.ar:
-            y_delayed = torch.cat((torch.zeros((n_batches, n_outputs, 1)), y[:, :, :-1],), -1)
+            y_delayed = F.pad(y[:, :, :-1], [1, 0])
             x = torch.cat((u_delayed, y_delayed), 1)
         else:
             x = u_delayed
@@ -53,16 +51,15 @@ class DynamicModel(nn.Module):
 
     def free_run_simulation(self, u, y=None):
         if self.ar:
-            rf = self.receptive_field
-            io_delay = self.io_delay
-            n_batches, n_inputs, seq_len = u.size()
-            n_outputs = self.num_outputs
-            y_sim = torch.zeros(n_batches, n_outputs, seq_len)
-            u_delayed = torch.cat((torch.zeros((n_batches, n_inputs, io_delay)), u[:, :, :-io_delay],), -1) if io_delay > 0 else u
+            rf = self.m.receptive_field
+            seq_len = u.size()[-1]
+
+            y_sim = torch.zeros(*u.size())
+            u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
             for i in range(seq_len):
                 if i < rf:
-                    y_in = torch.cat((torch.zeros((n_batches, n_outputs, rf-i)), y_sim[:, :, :i]), -1)
-                    u_in = torch.cat((torch.zeros((n_batches, n_inputs, rf-i-1)), u_delayed[:, :, :i+1]), -1)
+                    y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
+                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i-1, 0])
                 else:
                     y_in = y_sim[:, :, i-rf:i]
                     u_in = u_delayed[:, :, i-rf+1:i+1]
@@ -72,10 +69,22 @@ class DynamicModel(nn.Module):
             y_sim = self.one_step_ahead(u, y)
         return y_sim
 
+    @staticmethod
+    def _get_u_delayed(u, io_delay):
+        n_batches, n_inputs, seq_len = u.size()
+        if io_delay > 0:
+            u_delayed = torch.cat((torch.zeros((n_batches, n_inputs, io_delay)), u[:, :, :-io_delay],), -1)
+        elif io_delay < 0:
+            u_delayed = torch.cat((u[:, :, io_delay:], torch.zeros((n_batches, n_inputs, io_delay)),), -1)
+        else:
+            u_delayed = u
+
+        return u_delayed
+
     def forward(self, *args):
-        if self.mode == 'one-step-ahead':
+        if self.mode == RunMode.ONE_STEP_AHEAD:
             return self.one_step_ahead(*args)
-        elif self.mode == 'free-run-simulation':
+        elif self.mode == RunMode.FREE_RUN_SIMULATION:
             return self.free_run_simulation(*args)
         else:
             raise Exception("Not implemented mode")

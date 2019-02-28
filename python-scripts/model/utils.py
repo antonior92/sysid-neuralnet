@@ -1,5 +1,10 @@
 import torch.nn as nn
+from enum import Enum
 
+
+class RunMode(str, Enum):
+    FREE_RUN_SIMULATION = 'free-run-simulation'
+    ONE_STEP_AHEAD = 'one-step-ahead'
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
