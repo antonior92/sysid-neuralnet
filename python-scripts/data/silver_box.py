@@ -10,29 +10,23 @@ from data.dataset_ext import DatasetExt
 
 
 # based on https://github.com/locuslab/TCN/blob/master/TCN/lambada_language/utils.py
+
+def create_silverbox_datasets(seq_len, seq_len_eval):
+    U_train, Y_train, U_val, Y_val, U_test, Y_test = load_silverbox_data(seq_len, seq_len_eval)
+
+    dataset_train = SilverBoxDataset(U_train, Y_train)
+    dataset_val = SilverBoxDataset(U_val, Y_val)
+    dataset_test = SilverBoxDataset(U_test, Y_test)
+
+    return dataset_train, dataset_val, dataset_test
+
 class SilverBoxDataset(DatasetExt):
 
-    def __init__(self, seq_len, split='train'):
-        """
-        Create the Silverbox dataset with the choosen split
-        :param split: 'train', 'valid', 'test'
-        """
-
-        self.seq_len = seq_len
-
-        U_train, Y_train, U_val, Y_val, U_test, Y_test = load_silverbox_data(seq_len)
-
-        if split == 'train':
-            u, y = U_train, Y_train
-        elif split == 'valid':
-            u, y = U_val, Y_val
-        elif split == 'test':
-            u, y = U_test, Y_test
-        else:
-            raise Exception("Not a valid split: "+split)
-
-        self.u, self.y = u.astype(np.float32), y.astype(np.float32)
+    def __init__(self, u, y):
+        self.u = u.astype(np.float32)
+        self.y = y.astype(np.float32)
         self.ntotbatch = self.u.shape[0]
+        self.seq_len = self.u.shape[2]
 
     @property
     def data_shape(self):
@@ -72,7 +66,7 @@ def maybe_download_and_extract():
     return datafilepath
 
 
-def load_silverbox_data(seq_len):
+def load_silverbox_data(seq_len, seq_len_eval):
     # Extract input and output data Silverbox
     mat = scipy.io.loadmat(maybe_download_and_extract())
 
@@ -110,10 +104,16 @@ def load_silverbox_data(seq_len):
     # Reshape into (nBatches,nInputsorOutputs, nSamples)
     U_train = batchify(U_train, seq_len)
     Y_train = batchify(Y_train, seq_len)
-    U_val = batchify(U_val, seq_len)
-    Y_val = batchify(Y_val, seq_len)
-    U_test = batchify(U_test, seq_len)
-    Y_test = batchify(Y_test, seq_len)
+    if seq_len_eval is not None:
+        U_val = batchify(U_val, seq_len_eval)
+        Y_val = batchify(Y_val, seq_len_eval)
+        U_test = batchify(U_test, seq_len_eval)
+        Y_test = batchify(Y_test, seq_len_eval)
+    else:
+        U_val = batchify(U_val, U_val.shape[0])
+        Y_val = batchify(Y_val, Y_val.shape[0])
+        U_test = batchify(U_test, U_test.shape[0])
+        Y_test = batchify(Y_test, Y_test.shape[0])
 
     return U_train, Y_train, U_val, Y_val, U_test, Y_test
 

@@ -50,7 +50,7 @@ default_options_chen = {
     }
 }
 
-default_options_silverbox = {'seq_len': 1000}
+default_options_silverbox = {'seq_len': 1000, 'seq_len_eval': 1000}
 
 default_options_train = {
         'init_lr': 0.001,
@@ -105,7 +105,10 @@ def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
     for key in new_dict:
         if key in default_dict:
             if isinstance(default_dict[key], dict) and isinstance(new_dict[key], dict):
-                recursive_merge(default_dict[key], new_dict[key], path + [str(key)], allow_new=allow_new)
+                if key in ("model_options", "dataset_options"):
+                    recursive_merge(default_dict[key], new_dict[key], path + [str(key)], allow_new=True)
+                else:
+                    recursive_merge(default_dict[key], new_dict[key], path + [str(key)], allow_new=allow_new)
             elif isinstance(default_dict[key], dict) or isinstance(new_dict[key], dict):
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
             else:
@@ -187,7 +190,16 @@ def get_commandline_args():
     return commandline_options, option_dict, option_file
 
 
-def get_options(option_file=None, *option_dicts):
+def create_full_options_dict(*option_dicts, option_file=None):
+    """
+    Merges multiple option dictionaries with the default dictionary and an optional option file specifying options in
+    Json format.
+
+    :param option_dicts: Any number of option dictionaries
+    :param option_file:  An optional option file
+    :return: A merged option dictionary giving priority in the order of the input
+    """
+
     merged_options = copy.deepcopy(default_options)
 
     # Options specified in file
@@ -197,7 +209,7 @@ def get_options(option_file=None, *option_dicts):
         merged_options = recursive_merge(merged_options, options)
 
     # Options specified in commandline dict
-    for option_dict in option_dicts:
+    for option_dict in reversed(option_dicts):
         merged_options = recursive_merge(merged_options, option_dict)
 
     # Clear away unused fields and merge model options
@@ -219,10 +231,17 @@ def get_options(option_file=None, *option_dicts):
     return options
 
 
-def run(options=None, load_model=None, mode='interactive'):
-
+def run(options=None, load_model=None, mode_interactive=True):
     if options is None:
         options = {}
+
+    if not mode_interactive:
+        # Create folder
+        os.makedirs(options["logdir"], exist_ok=True)
+        # Set stdout to print to file and console
+        set_redirects(options["logdir"])
+
+
 
     if load_model is not None:
         file = open(os.path.join(os.path.dirname(load_model), 'options.txt'), "r")
@@ -257,15 +276,11 @@ def run(options=None, load_model=None, mode='interactive'):
     else:
         current_epoch = 0
 
-    if mode == 'script':
-        # Write options used to file
-        os.makedirs(os.path.dirname(options["logdir"] + "/options.txt"), exist_ok=True)
-        with open(options["logdir"] + "/options.txt", "w+") as f:
+    if not mode_interactive:
+
+        with open(os.path.join(options["logdir"], "options.txt"), "w+") as f:
             f.write(json.dumps(options, indent=1))
             print(json.dumps(options, indent=1))
-
-        # Set stdout to print to file and console
-        set_redirects(options["logdir"])
 
         # Run model
         if options["evaluate_model"]:
@@ -282,13 +297,13 @@ def run(options=None, load_model=None, mode='interactive'):
                             loader_train=loaders["train"],
                             loader_valid=loaders["valid"],
                             train_options=options["train_options"])
-    elif mode == 'interactive':
+    else:
         return modelstate.model, loaders, options
 
 
 if __name__ == "__main__":
     commandline_options, option_dict, option_file = get_commandline_args()
 
-    run_options = get_options(option_file, option_dict, commandline_options)
+    run_options = create_full_options_dict(commandline_options, option_dict, option_file=option_file)
 
-    run(run_options, load_model=run_options["load_model"], mode='script')
+    run(run_options, load_model=run_options["load_model"], mode_interactive=False)
