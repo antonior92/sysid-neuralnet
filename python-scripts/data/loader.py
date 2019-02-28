@@ -1,7 +1,7 @@
 from data.dataset_ext import DataLoaderExt
 
 from data.chen_example import ChenDataset
-from data.silver_box import SilverBoxDataset
+from data.silver_box import create_silverbox_datasets
 
 
 def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
@@ -14,16 +14,12 @@ def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
                                      batch_size=test_batch_size, shuffle=False, num_workers=4)
     elif dataset == 'silverbox':
 
-        loader_train = DataLoaderExt(SilverBoxDataset(**dataset_options, split='train'),
-                                     batch_size=train_batch_size, shuffle=False, num_workers=4)
-        loader_valid = DataLoaderExt(SilverBoxDataset(**dataset_options, split='valid'),
-                                     batch_size=test_batch_size, shuffle=False, num_workers=4)
+        dataset_train, dataset_valid, dataset_test = create_silverbox_datasets(**dataset_options)
 
-        # TODO: Hack change this
-        test_dataset_options = dict(dataset_options)
-        test_dataset_options["seq_len"] = 36000
-        loader_test = DataLoaderExt(SilverBoxDataset(**test_dataset_options, split='test'),
-                                    batch_size=test_batch_size, shuffle=False, num_workers=4)
+        loader_train = DataLoaderExt(dataset_train, batch_size=train_batch_size, shuffle=True, num_workers=4)
+        loader_valid = DataLoaderExt(dataset_valid, batch_size=test_batch_size, shuffle=False, num_workers=4)
+        loader_test = DataLoaderExt(dataset_test, batch_size=test_batch_size, shuffle=False, num_workers=4)
+
     else:
         raise Exception("Dataset not implemented: {}".format(dataset))
 

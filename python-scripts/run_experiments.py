@@ -3,27 +3,11 @@ import run
 import time
 import math
 
-class tcn_model:
-    def __init__(self,  ksize = 3, dropout = 0.2, n_channels = [16, 32], dilation_sizes = [1, 1],  ar= True):
-        self.ksize = ksize
-        self.dropout = dropout
-        self.n_channels = n_channels
-        self.dilation_sizes = dilation_sizes
-        self.ar = ar
-
-
-class mlp_model:
-    __dict__ = {'hidden_size': 10,
-                'max_past_input': 3,
-                'ar': True,
-                'io_delay': 1}
-
 
 
 def sub_run(dict):
-    print("running")
-    options = run.get_options(None, dict)
-    run.run(options, mode='script')
+    options = run.create_full_options_dict(dict)
+    run.run(options, mode_interactive=False)
 
 option_dicts = []
 
@@ -45,7 +29,7 @@ for seqlen in seqlen_list:
             option_dicts.append({"logdir": "log/batchsizes", "cuda": True,
                                  "dataset": "silverbox", "model": "mlp",
                                  "train_options": {"batch_size": batch_size, "init_lr": lr},
-                                 "silverbox_options": {"seq_len": seqlen}
+                                 "dataset_options": {"seq_len": seqlen}
                                  }
                                 )
 
@@ -53,7 +37,7 @@ for seqlen in seqlen_list:
 
 
 
-num_processes = 8
+num_processes = 1
 
 processes = []
 while len(option_dicts) > 0:
