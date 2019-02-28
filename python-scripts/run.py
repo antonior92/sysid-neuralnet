@@ -186,27 +186,29 @@ def get_commandline_args():
     return commandline_options, option_dict, option_file
 
 
-def create_full_options_dict(*option_dicts, option_file=None):
+def create_full_options_dict(*option_dicts):
     """
     Merges multiple option dictionaries with the default dictionary and an optional option file specifying options in
     Json format.
 
-    :param option_dicts: Any number of option dictionaries
-    :param option_file:  An optional option file
+    :param option_dicts: Any number of option dictionaries either in the form of a dictionary or a file containg Json dict
     :return: A merged option dictionary giving priority in the order of the input
     """
 
     merged_options = copy.deepcopy(default_options)
 
     # Options specified in file
-    if option_file is not None:
-        file = open(option_file, "r")
-        options = json.loads(file.read())
-        merged_options = recursive_merge(merged_options, options)
+
 
     # Options specified in commandline dict
     for option_dict in reversed(option_dicts):
-        merged_options = recursive_merge(merged_options, option_dict)
+        if isinstance(option_dict,str):
+            with open(option_dict, "r") as file:
+                option = json.loads(file.read())
+        else:
+            option = option_dict
+
+        merged_options = recursive_merge(merged_options, option)
 
     # Clear away unused fields and merge model options
     options = clean_options(merged_options)
@@ -228,8 +230,7 @@ def create_full_options_dict(*option_dicts, option_file=None):
 
 
 def run(options=None, load_model=None, mode_interactive=True):
-    if options is None:
-        options = {}
+
 
     if not mode_interactive:
         # Create folder
@@ -238,16 +239,22 @@ def run(options=None, load_model=None, mode_interactive=True):
         set_redirects(options["logdir"])
 
     if load_model is not None:
-        file = open(os.path.join(os.path.dirname(load_model), 'options.txt'), "r")
-        ckpt_options = json.loads(file.read())
+
+        ckpt_options = create_full_options_dict(os.path.join(os.path.dirname(load_model), 'options.txt'))
+
+        if options is None:
+            options = {}
+
+        options["model"] = ckpt_options["model"]
+        options["dataset"] = ckpt_options["dataset"]
 
         options["optimizer"] = ckpt_options["optimizer"]
-        options["model"] = ckpt_options["model"]
         options["model_options"] = ckpt_options["model_options"]
-        options["dataset"] = ckpt_options["dataset"]
         options["dataset_options"] = ckpt_options["dataset_options"]
 
         options = recursive_merge(ckpt_options, options)
+    else:
+        options = create_full_options_dict()  # Default values
 
     # Specifying datasets
     loaders = loader.load_dataset(dataset=options["dataset"],
@@ -290,6 +297,6 @@ def run(options=None, load_model=None, mode_interactive=True):
 if __name__ == "__main__":
     # Get options
     commandline_options, option_dict, option_file = get_commandline_args()
-    run_options = create_full_options_dict(commandline_options, option_dict, option_file=option_file)
+    run_options = create_full_options_dict(commandline_options, option_dict, option_file)
     # Run
     run(run_options, load_model=run_options["load_model"], mode_interactive=False)
