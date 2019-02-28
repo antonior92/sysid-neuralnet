@@ -19,15 +19,7 @@ class ModelState:
             if not cuda:
                 print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-        if model == 'lstm':
-            nn_model = LSTM
-        elif model == 'tcn':
-            nn_model = TCN
-        elif model == 'mlp':
-            nn_model = MLP
-        else:
-            raise Exception("Model not implemented: {}".format(model))
-        self.model = DynamicModel(nn_model, nu, ny, **model_options)
+        self.model = DynamicModel(model, nu, ny, **model_options)
 
         if cuda:
             self.model.cuda()
