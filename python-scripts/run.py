@@ -3,7 +3,6 @@ import json
 import copy
 import time
 import os.path
-import test
 import train
 from logger import set_redirects
 import data.loader as loader
@@ -277,20 +276,13 @@ def run(options=None, load_model=None, mode_interactive=True):
             print(json.dumps(options, indent=1))
 
         # Run model
-        if options["evaluate_model"]:
-            test.run_test(epoch=current_epoch,
-                          logdir=options["logdir"],
-                          loader_test=loaders["test"],
-                          model=modelstate.model,
-                          test_options=options["test_options"])
-        else:
-            train.run_train(start_epoch=current_epoch,
-                            cuda=options["cuda"],
-                            modelstate=modelstate,
-                            logdir=options["logdir"],
-                            loader_train=loaders["train"],
-                            loader_valid=loaders["valid"],
-                            train_options=options["train_options"])
+        train.run_train(start_epoch=current_epoch,
+                        cuda=options["cuda"],
+                        modelstate=modelstate,
+                        logdir=options["logdir"],
+                        loader_train=loaders["train"],
+                        loader_valid=loaders["valid"],
+                        train_options=options["train_options"])
     else:
         return modelstate.model, loaders, options
 
