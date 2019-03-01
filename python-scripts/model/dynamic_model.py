@@ -7,9 +7,6 @@ from .utils import copy_module_params
 import time
 
 
-
-
-
 class DynamicModel(nn.Module):
     def __init__(self, model, num_inputs, num_outputs, ar, io_delay, *args, **kwargs):
         super(DynamicModel, self).__init__()
@@ -60,9 +57,8 @@ class DynamicModel(nn.Module):
     def free_run_simulation(self, u, y=None):
         if self.ar:
             rf = self.m.receptive_field
-            seq_len = u.size()[-1]
-
-            y_sim = torch.zeros(*u.size())
+            num_batches, _, seq_len = u.size()
+            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len)
             if self.is_cuda:
                 y_sim = y_sim.cuda()
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
@@ -74,6 +70,7 @@ class DynamicModel(nn.Module):
                     y_in = y_sim[:, :, i-rf:i]
                     u_in = u_delayed[:, :, i-rf+1:i+1]
                 x = torch.cat((u_in, y_in), 1)
+                print(x.size())
                 y_sim[:, :, i] = self.m(x)[:, :, -1]
         else:
             y_sim = self.one_step_ahead(u, y)
