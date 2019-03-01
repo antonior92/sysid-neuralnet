@@ -8,7 +8,10 @@ import time
 
 
 class DynamicModel(nn.Module):
-    def __init__(self, model, num_inputs, num_outputs, ar, io_delay, *args, **kwargs):
+    epsilon = 1e-16
+    def __init__(self, model, num_inputs, num_outputs, ar, io_delay,
+                 offset_in=None, offset_out=None, scale_in=None, scale_out=None,
+                 *args, **kwargs):
         super(DynamicModel, self).__init__()
         # Save parameters
         self.num_inputs = num_inputs
@@ -18,6 +21,14 @@ class DynamicModel(nn.Module):
         self.ar = ar
         self.io_delay = io_delay
         self.is_cuda = False
+        self.offset_in = torch.tensor(offset_in, dtype=torch.float32) + self.epsilon if offset_in is not None \
+            else torch.zeros(num_inputs)
+        self.offset_out = torch.tensor(offset_out, dtype=torch.float32) + self.epsilon if offset_out is not None \
+            else torch.zeros(num_outputs)
+        self.scale_in = torch.tensor(scale_in, dtype=torch.float32) + self.epsilon if scale_in is not None \
+            else torch.ones(num_inputs)
+        self.scale_out = torch.tensor(scale_out, dtype=torch.float32) + self.epsilon if scale_out is not None \
+            else torch.ones(num_outputs)
         # Initialize model
         self.mode = RunMode.ONE_STEP_AHEAD
         if model == 'mlp':
@@ -43,15 +54,20 @@ class DynamicModel(nn.Module):
         self.m.set_mode(mode)
 
     def one_step_ahead(self, u, y=None):
-
         u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
-
+        # Normalize u
+        u_normalized = self.tensor_mult(u_delayed, 1/self.scale_in, -self.offset_in/self.scale_in)
         if self.ar:
-            y_delayed = F.pad(y[:, :, :-1], [1, 0])
-            x = torch.cat((u_delayed, y_delayed), 1)
+            # Normalize y
+            y_delayed = self.tensor_mult(y, 1 / self.scale_out, -self.offset_out / self.scale_out)
+            y_normalized = F.pad(y_delayed[:, :, :-1], [1, 0])
+            x = torch.cat((u_normalized, y_normalized), 1)
         else:
             x = u_delayed
         y_pred = self.m(x)
+        # Un-normalize y
+        y_pred = self.tensor_mult(y_pred, self.scale_out, self.offset_out)
+
         return y_pred
 
     def free_run_simulation(self, u, y=None):
@@ -62,16 +78,20 @@ class DynamicModel(nn.Module):
             if self.is_cuda:
                 y_sim = y_sim.cuda()
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
+            # Nomalize input
+            u_normalized = self.tensor_mult(u_delayed, 1/self.scale_in, -self.offset_in/self.scale_in)
             for i in range(seq_len):
                 if i < rf:
                     y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
-                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i-1, 0])
+                    u_in = F.pad(u_normalized[:, :, :i+1], [rf-i-1, 0])
                 else:
                     y_in = y_sim[:, :, i-rf:i]
-                    u_in = u_delayed[:, :, i-rf+1:i+1]
+                    u_in = u_normalized[:, :, i-rf+1:i+1]
+
                 x = torch.cat((u_in, y_in), 1)
-                print(x.size())
                 y_sim[:, :, i] = self.m(x)[:, :, -1]
+            # Un-normalize output
+            y_sim = self.tensor_mult(y_sim, self.scale_out, self.offset_out)
         else:
             y_sim = self.one_step_ahead(u, y)
         return y_sim
@@ -86,6 +106,12 @@ class DynamicModel(nn.Module):
             u_delayed = u
 
         return u_delayed
+
+    @staticmethod
+    def tensor_mult(x, scale, offset):
+        x = x.permute(0, 2, 1)
+        x = x.mul(scale) + offset
+        return x.permute(0, 2, 1)
 
     def forward(self, *args):
         if self.mode == RunMode.ONE_STEP_AHEAD:
