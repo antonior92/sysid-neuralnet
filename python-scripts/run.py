@@ -57,7 +57,7 @@ default_options_train = {
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
         'log_interval': 1,
-        'training_mode': 'free-run-simulation'
+        'training_mode': 'one-step-ahead'
 }
 
 default_options_optimizer = {
