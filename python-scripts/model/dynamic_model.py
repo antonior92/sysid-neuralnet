@@ -77,8 +77,10 @@ class DynamicModel(nn.Module):
             y_sim = torch.zeros(num_batches, self.num_outputs, seq_len)
             if self.is_cuda:
                 y_sim = y_sim.cuda()
-        u_normalized = self.tensor_mult(u, 1/self.scale_in, -self.offset_in/self.scale_in)
-        u_delayed = DynamicModel._get_u_delayed(u_normalized, self.io_delay)
+
+            u_normalized = self.tensor_mult(u, 1 / self.scale_in, -self.offset_in / self.scale_in)
+            u_delayed = DynamicModel._get_u_delayed(u_normalized, self.io_delay)
+            # Nomalize input
             for i in range(seq_len):
                 if i < rf:
                     y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
