@@ -20,6 +20,7 @@ class DynamicModel(nn.Module):
         self.kwargs = kwargs
         self.ar = ar
         self.io_delay = io_delay
+        self.is_cuda = False
         # Initialize model
         self.mode = RunMode.ONE_STEP_AHEAD
         if model == 'mlp':
@@ -28,6 +29,13 @@ class DynamicModel(nn.Module):
         else:
             raise Exception("Unimplemented model")
 
+    def cuda(self, device=None):
+        self.is_cuda = True
+        super(DynamicModel, self).cuda(device)
+
+    def cpu(self):
+        self.is_cuda = False
+        super(DynamicModel, self).cpu()
 
     @property
     def num_model_inputs(self):
@@ -55,6 +63,8 @@ class DynamicModel(nn.Module):
             seq_len = u.size()[-1]
 
             y_sim = torch.zeros(*u.size())
+            if self.is_cuda:
+                y_sim = y_sim.cuda()
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
             for i in range(seq_len):
                 if i < rf:
@@ -71,11 +81,10 @@ class DynamicModel(nn.Module):
 
     @staticmethod
     def _get_u_delayed(u, io_delay):
-        n_batches, n_inputs, seq_len = u.size()
         if io_delay > 0:
-            u_delayed = torch.cat((torch.zeros((n_batches, n_inputs, io_delay)), u[:, :, :-io_delay],), -1)
+            u_delayed = F.pad(u[:, :, :-io_delay], [io_delay, 0])
         elif io_delay < 0:
-            u_delayed = torch.cat((u[:, :, io_delay:], torch.zeros((n_batches, n_inputs, io_delay)),), -1)
+            u_delayed = F.pad(u[:, :, io_delay:], [0, io_delay])
         else:
             u_delayed = u
 
