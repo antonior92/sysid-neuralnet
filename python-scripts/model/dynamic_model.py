@@ -9,6 +9,7 @@ import time
 
 class DynamicModel(nn.Module):
     epsilon = 1e-16
+
     def __init__(self, model, num_inputs, num_outputs, ar, io_delay,
                  offset_in=None, offset_out=None, scale_in=None, scale_out=None,
                  *args, **kwargs):
@@ -54,14 +55,13 @@ class DynamicModel(nn.Module):
         self.m.set_mode(mode)
 
     def one_step_ahead(self, u, y=None):
-        u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
-        # Normalize u
-        u_normalized = self.tensor_mult(u_delayed, 1/self.scale_in, -self.offset_in/self.scale_in)
+        u_normalized = self.tensor_mult(u, 1/self.scale_in, -self.offset_in/self.scale_in)
+        u_delayed = DynamicModel._get_u_delayed(u_normalized, self.io_delay)
         if self.ar:
             # Normalize y
-            y_delayed = self.tensor_mult(y, 1 / self.scale_out, -self.offset_out / self.scale_out)
-            y_normalized = F.pad(y_delayed[:, :, :-1], [1, 0])
-            x = torch.cat((u_normalized, y_normalized), 1)
+            y_normalized = self.tensor_mult(y, 1 / self.scale_out, -self.offset_out / self.scale_out)
+            y_delayed = F.pad(y_normalized[:, :, :-1], [1, 0])
+            x = torch.cat((u_delayed, y_delayed), 1)
         else:
             x = u_delayed
         y_pred = self.m(x)
@@ -77,16 +77,15 @@ class DynamicModel(nn.Module):
             y_sim = torch.zeros(num_batches, self.num_outputs, seq_len)
             if self.is_cuda:
                 y_sim = y_sim.cuda()
-            u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
-            # Nomalize input
-            u_normalized = self.tensor_mult(u_delayed, 1/self.scale_in, -self.offset_in/self.scale_in)
+        u_normalized = self.tensor_mult(u, 1/self.scale_in, -self.offset_in/self.scale_in)
+        u_delayed = DynamicModel._get_u_delayed(u_normalized, self.io_delay)
             for i in range(seq_len):
                 if i < rf:
                     y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
-                    u_in = F.pad(u_normalized[:, :, :i+1], [rf-i-1, 0])
+                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i-1, 0])
                 else:
                     y_in = y_sim[:, :, i-rf:i]
-                    u_in = u_normalized[:, :, i-rf+1:i+1]
+                    u_in = u_delayed[:, :, i-rf+1:i+1]
 
                 x = torch.cat((u_in, y_in), 1)
                 y_sim[:, :, i] = self.m(x)[:, :, -1]
