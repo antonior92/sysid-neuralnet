@@ -7,6 +7,7 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
+import torch
 from model.utils import RunMode
 
 default_options_lstm = {
@@ -77,6 +78,8 @@ default_options = {
     'run_name': None,
     'load_model': None,
     'evaluate_model': False,
+    'normalize': False,
+    'normalize_n_std': 1,
     'train_options': default_options_train,
     'test_options': default_options_test,
     'optimizer': default_options_optimizer,
@@ -87,7 +90,7 @@ default_options = {
     'silverbox_options': default_options_silverbox,
 
     'model': 'mlp',
-    'model_options': {},
+    'model_options':{} ,
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
     'mlp_options': default_options_mlp,
@@ -229,8 +232,29 @@ def create_full_options_dict(*option_dicts):
     return options
 
 
-def run(options=None, load_model=None, mode_interactive=True):
+def compute_mean(loader_train, cuda):
+    total_batches = 0
+    for i, (u, y) in enumerate(loader_train):
+        total_batches += u.size()[0]
+        if cuda:
+            u = u.cuda()
+            y = y.cuda()
+        if i == 0:
+            u_mean = torch.mean(u, dim=(0, 2))
+            y_mean = torch.mean(y, dim=(0, 2))
+            u_var = torch.mean(torch.var(u, dim=2, unbiased=False), dim=0)
+            y_var = torch.mean(torch.var(y, dim=2, unbiased=False), dim=0)
+        else:
+            u_mean += torch.mean(u, dim=(0, 2))
+            y_mean += torch.mean(y, dim=(0, 2))
+            u_var += torch.mean(torch.var(u, dim=2, unbiased=False), dim=0)
+            y_var += torch.mean(torch.var(y, dim=2, unbiased=False), dim=0)
 
+    return (u_mean/total_batches, y_mean/total_batches,
+           torch.sqrt(u_var/total_batches), torch.sqrt(y_var/total_batches))
+
+
+def run(options=None, load_model=None, mode_interactive=True):
 
     if not mode_interactive:
         # Create folder
@@ -261,6 +285,8 @@ def run(options=None, load_model=None, mode_interactive=True):
                                   dataset_options=options["dataset_options"],
                                   train_batch_size=options["train_options"]["batch_size"],
                                   test_batch_size=options["test_options"]["batch_size"])
+    # Compute mean and var
+    u_mean, y_mean, u_std, y_std = compute_mean(loaders['train'], options["cuda"])
 
     # Define model
     modelstate = ModelState(seed=options["seed"],
@@ -269,7 +295,13 @@ def run(options=None, load_model=None, mode_interactive=True):
                             optimizer=options["optimizer"],
                             init_lr=options["train_options"]["init_lr"],
                             model=options["model"],
-                            model_options=options["model_options"])
+                            model_options=options["model_options"],
+                            normalize=options["normalize"],
+                            normalize_n_std=options["normalize_n_std"],
+                            u_mean=u_mean,
+                            y_mean=y_mean,
+                            u_std=u_std,
+                            y_std=y_std)
 
     # Restore model
     if load_model is not None:

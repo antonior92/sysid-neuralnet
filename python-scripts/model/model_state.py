@@ -13,13 +13,20 @@ class ModelState:
     optimizer
     """
 
-    def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options):
+    def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options,
+                 normalize, normalize_n_std, u_mean, y_mean, u_std, y_std):
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             if not cuda:
                 print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-        self.model = DynamicModel(model, nu, ny, **model_options)
+        if normalize:
+            self.model = DynamicModel(model, nu, ny,
+                                      offset_in=u_mean, scale_in=normalize_n_std*u_std,
+                                      offset_out=y_mean, scale_out=normalize_n_std*y_std,
+                                      **model_options)
+        else:
+            self.model = DynamicModel(model, nu, ny, **model_options)
 
         if cuda:
             self.model.cuda()
