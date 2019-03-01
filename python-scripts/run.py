@@ -253,7 +253,7 @@ def run(options=None, load_model=None, mode_interactive=True):
         options["dataset_options"] = ckpt_options["dataset_options"]
 
         options = recursive_merge(ckpt_options, options)
-    else:
+    elif options is None:
         options = create_full_options_dict()  # Default values
 
     # Specifying datasets
