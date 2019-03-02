@@ -18,9 +18,9 @@ default_options_lstm = {
 
 default_options_tcn = {
     'ksize': 3,
-    'dropout': 0.2,
-    'n_channels': [16, 32],
-    'dilation_sizes': [1, 1],
+    'dropout': 0.05,
+    'n_channels': [50, 50, 50, 50],
+    'dilation_sizes': None,
     'ar': True,
     'io_delay': 0
 }
@@ -89,8 +89,8 @@ default_options = {
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
-    'model': 'mlp',
-    'model_options':{} ,
+    'model': 'tcn',
+    'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
     'mlp_options': default_options_mlp,

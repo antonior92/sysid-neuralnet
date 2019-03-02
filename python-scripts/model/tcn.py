@@ -22,26 +22,32 @@
 
 import torch.nn as nn
 from torch.nn.utils import weight_norm
-from .utils import Chomp1d
+from .utils import RunMode, DynamicModule
 
 
-class TemporalBlock(nn.Module):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
+class TemporalBlock(DynamicModule):
+    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, dropout=0.2):
         super(TemporalBlock, self).__init__()
+
+        # This is the receptive field of the entire module!
+        self.padding = (kernel_size - 1) * dilation
+        self.receptive_field = 2 * self.padding + 1
+        self.requested_output = None
+
+        self.pad1 = nn.ConstantPad1d((self.padding, 0), 0)
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
-                                           stride=stride, padding=padding, dilation=dilation))
-        self.chomp1 = Chomp1d(padding)
+                                           stride=stride, padding=0, dilation=dilation))
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
 
+        self.pad2  = nn.ConstantPad1d((self.padding, 0), 0)
         self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size,
-                                           stride=stride, padding=padding, dilation=dilation))
-        self.chomp2 = Chomp1d(padding)
+                                           stride=stride, padding=0, dilation=dilation))
         self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout)
 
-        self.net = nn.Sequential(self.conv1, self.chomp1, self.relu1, self.dropout1,
-                                 self.conv2, self.chomp2, self.relu2, self.dropout2)
+        self.net = nn.Sequential(self.pad1, self.conv1, self.relu1, self.dropout1,
+                                 self.pad2, self.conv2, self.relu2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
         self.init_weights()
@@ -53,32 +59,68 @@ class TemporalBlock(nn.Module):
             self.downsample.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
-        out = self.net(x)
         res = x if self.downsample is None else self.downsample(x)
+
+        if self.mode == RunMode.FREE_RUN_SIMULATION:
+            # Calculate needed padding size
+            seq_len1 = x.size()[-1]
+            req_input1 = min(seq_len1, self.requested_output + self.padding) + self.padding
+            padding1 = req_input1 - seq_len1
+            self.pad1.padding = (padding1, 0)
+            assert(padding1 >= 0)
+
+            seq_len2 = seq_len1 + padding1 - self.padding
+            req_input2 = min(seq_len2, self.requested_output) + self.padding
+            padding2 = req_input2 - seq_len2
+            self.pad2.padding = (padding2, 0)
+            assert (padding2 >= 0)
+
+            res = res[..., -self.requested_output:]
+
+        out = self.net(x)
+
         return self.relu(out + res)
 
+    def set_mode(self, mode):
+        self.mode = mode
+        if mode == RunMode.ONE_STEP_AHEAD:
+            self.pad1.padding = (self.padding, 0)
+            self.pad2.padding = (self.padding, 0)
 
-class TCN(nn.Module):
+
+
+class TCN(DynamicModule):
     def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2):
         super(TCN, self).__init__()
         layers = []
         num_levels = len(n_channels)
         if dilation_sizes is None:
-            dilation_sizes = [2 ** i for i in range(num_levels)]
+            dilation_sizes = [2 ** i for i in reversed(range(num_levels))]
         for i in range(num_levels):
             dilation_size = dilation_sizes[i]
             in_channels = num_inputs if i == 0 else n_channels[i-1]
             out_channels = n_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1, dilation=dilation_size,
-                                     padding=(ksize-1) * dilation_size, dropout=dropout)]
+            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1, dilation=dilation_size, dropout=dropout)]
         self.network = nn.Sequential(*layers)
-        self.linear = nn.Linear(n_channels[-1], num_outputs)
+        self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
         self.init_weights()
 
+        requested_output = 1
+        for temporal_module in reversed(self.network):
+            temporal_module.requested_output = requested_output
+            requested_output += temporal_module.receptive_field - 1
+        self.receptive_field = requested_output
+
+
     def init_weights(self):
-        self.linear.weight.data.normal_(0, 0.01)
+        self.final_conv.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
         y = self.network(x)
-        z = self.linear(y.transpose(1, 2))
-        return z.transpose(1, 2)
+        return self.final_conv(y)
+
+    def set_mode(self, mode):
+        self.mode = mode
+        for temporal_module in self.network:
+            temporal_module.set_mode(mode)
+

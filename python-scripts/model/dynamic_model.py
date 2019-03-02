@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import MLP
+from . import TCN
 from model.utils import RunMode
-from .utils import copy_module_params
-import time
 
 
 class DynamicModel(nn.Module):
@@ -34,6 +33,9 @@ class DynamicModel(nn.Module):
         self.mode = RunMode.ONE_STEP_AHEAD
         if model == 'mlp':
             self.m = MLP(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
+            self.m.set_mode(self.mode)
+        elif model == 'tcn':
+            self.m = TCN(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
             self.m.set_mode(self.mode)
         else:
             raise Exception("Unimplemented model")
@@ -74,7 +76,7 @@ class DynamicModel(nn.Module):
         if self.ar:
             rf = self.m.receptive_field
             num_batches, _, seq_len = u.size()
-            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len)
+            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1)
             if self.is_cuda:
                 y_sim = y_sim.cuda()
 
@@ -83,19 +85,20 @@ class DynamicModel(nn.Module):
             # Nomalize input
             for i in range(seq_len):
                 if i < rf:
-                    y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
-                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i-1, 0])
+                    y_in = y_sim[:, :, :i+1]
+                    u_in = u_delayed[:, :, :i+1]
                 else:
-                    y_in = y_sim[:, :, i-rf:i]
+                    y_in = y_sim[:, :, i-rf+1:i+1]
                     u_in = u_delayed[:, :, i-rf+1:i+1]
 
                 x = torch.cat((u_in, y_in), 1)
-                y_sim[:, :, i] = self.m(x)[:, :, -1]
+
+                y_sim[:, :, i+1] = self.m(x)[:, :, -1]
             # Un-normalize output
             y_sim = self.tensor_mult(y_sim, self.scale_out, self.offset_out)
         else:
             y_sim = self.one_step_ahead(u, y)
-        return y_sim
+        return y_sim[..., 1:]
 
     @staticmethod
     def _get_u_delayed(u, io_delay):

@@ -6,14 +6,6 @@ class RunMode(str, Enum):
     FREE_RUN_SIMULATION = 'free-run-simulation'
     ONE_STEP_AHEAD = 'one-step-ahead'
 
-class Chomp1d(nn.Module):
-    def __init__(self, chomp_size):
-        super(Chomp1d, self).__init__()
-        self.chomp_size = chomp_size
-
-    def forward(self, x):
-        return x[:, :, :-self.chomp_size].contiguous()
-
 
 def copy_module_params(src, dest):
     for name, param in src.named_parameters():
@@ -26,3 +18,13 @@ def copy_module_params(src, dest):
         except:
             pass
     return dest
+
+
+class DynamicModule(nn.Module):
+    def __init__(self):
+        super(DynamicModule,self).__init__()
+        self.mode = RunMode.ONE_STEP_AHEAD
+        self.receptive_field = None
+
+    def set_mode(self, mode):
+        raise NotImplementedError
