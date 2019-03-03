@@ -29,7 +29,7 @@ class TemporalBlock(DynamicModule):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, dropout=0.2):
         super(TemporalBlock, self).__init__()
 
-        # This is the receptive field of the entire module!
+        # The padding of one conv and the receptive field of the entire module
         self.padding = (kernel_size - 1) * dilation
         self.receptive_field = 2 * self.padding + 1
         self.requested_output = None
@@ -50,13 +50,6 @@ class TemporalBlock(DynamicModule):
                                  self.pad2, self.conv2, self.relu2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
-        self.init_weights()
-
-    def init_weights(self):
-        self.conv1.weight.data.normal_(0, 0.01)
-        self.conv2.weight.data.normal_(0, 0.01)
-        if self.downsample is not None:
-            self.downsample.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
@@ -103,17 +96,12 @@ class TCN(DynamicModule):
             layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1, dilation=dilation_size, dropout=dropout)]
         self.network = nn.Sequential(*layers)
         self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
-        self.init_weights()
 
         requested_output = 1
         for temporal_module in reversed(self.network):
             temporal_module.requested_output = requested_output
             requested_output += temporal_module.receptive_field - 1
         self.receptive_field = requested_output
-
-
-    def init_weights(self):
-        self.final_conv.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
         y = self.network(x)

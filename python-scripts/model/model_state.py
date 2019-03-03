@@ -13,20 +13,13 @@ class ModelState:
     optimizer
     """
 
-    def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options,
-                 normalize, normalize_n_std, u_mean, y_mean, u_std, y_std):
+    def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options, **kwargs):
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             if not cuda:
                 print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-        if normalize:
-            self.model = DynamicModel(model, nu, ny,
-                                      offset_in=u_mean, scale_in=normalize_n_std*u_std,
-                                      offset_out=y_mean, scale_out=normalize_n_std*y_std,
-                                      **model_options)
-        else:
-            self.model = DynamicModel(model, nu, ny, **model_options)
+        self.model = DynamicModel(model, nu, ny, **model_options, **kwargs)
 
         if cuda:
             self.model.cuda()
@@ -35,21 +28,26 @@ class ModelState:
         self.optimizer = getattr(optim, optimizer['optim'])(self.model.parameters(), lr=init_lr)
 
     def load_model(self, path, name='model.pt'):
-        try:
-            file = os.path.join(path, name)
-            ckpt = torch.load(file, map_location=lambda storage, loc: storage)
-            self.model.load_state_dict(ckpt["model"])
-            self.optimizer.load_state_dict(ckpt["optimizer"])
-            epoch = ckpt['epoch']
-        except NotADirectoryError as e:
+        if os.path.isfile(path):
             try:
                 file = path
                 ckpt = torch.load(file, map_location=lambda storage, loc: storage)
                 self.model.load_state_dict(ckpt["model"])
                 self.optimizer.load_state_dict(ckpt["optimizer"])
                 epoch = ckpt['epoch']
-            except NotADirectoryError as e:
-                raise Exception("Could not find model: " + path)
+            except NotADirectoryError:
+                raise Exception("Could not find model: " + file)
+
+        else:
+            try:
+                file = os.path.join(path, name)
+                ckpt = torch.load(file, map_location=lambda storage, loc: storage)
+                self.model.load_state_dict(ckpt["model"])
+                self.optimizer.load_state_dict(ckpt["optimizer"])
+                epoch = ckpt['epoch']
+            except NotADirectoryError:
+                raise Exception("Could not find model: " + file)
+
         return epoch
 
     def save_model(self, epoch, vloss, elapsed_time,  path, name='model.pt'):

@@ -7,8 +7,9 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
+from model.dynamic_model import Normalizer1D
 import torch
-from model.utils import RunMode
+import numpy as np
 
 default_options_lstm = {
     'hidden_size': 5,
@@ -48,12 +49,12 @@ default_options_chen = {
     }
 }
 
-default_options_silverbox = {'seq_len': 1000, 'seq_len_eval': 1000}
+default_options_silverbox = {'seq_len': 2048, 'seq_len_eval': 2048}
 
 default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
-        'batch_size': 3,
+        'batch_size': 6,
         'epochs': 10000,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
@@ -78,7 +79,7 @@ default_options = {
     'run_name': None,
     'load_model': None,
     'evaluate_model': False,
-    'normalize': False,
+    'normalize': True,
     'normalize_n_std': 1,
     'train_options': default_options_train,
     'test_options': default_options_test,
@@ -232,26 +233,27 @@ def create_full_options_dict(*option_dicts):
     return options
 
 
-def compute_mean(loader_train, cuda):
+def compute_normalizers(loader_train, variance_scaler):
     total_batches = 0
+    u_mean = 0
+    y_mean = 0
+    u_var = 0
+    y_var = 0
     for i, (u, y) in enumerate(loader_train):
         total_batches += u.size()[0]
-        if cuda:
-            u = u.cuda()
-            y = y.cuda()
-        if i == 0:
-            u_mean = torch.mean(u, dim=(0, 2))
-            y_mean = torch.mean(y, dim=(0, 2))
-            u_var = torch.mean(torch.var(u, dim=2, unbiased=False), dim=0)
-            y_var = torch.mean(torch.var(y, dim=2, unbiased=False), dim=0)
-        else:
-            u_mean += torch.mean(u, dim=(0, 2))
-            y_mean += torch.mean(y, dim=(0, 2))
-            u_var += torch.mean(torch.var(u, dim=2, unbiased=False), dim=0)
-            y_var += torch.mean(torch.var(y, dim=2, unbiased=False), dim=0)
+        u_mean += torch.mean(u, dim=(0, 2))
+        y_mean += torch.mean(y, dim=(0, 2))
+        u_var += torch.mean(torch.var(u, dim=2, unbiased=False), dim=(0, ))
+        y_var += torch.mean(torch.var(y, dim=2, unbiased=False), dim=(0, ))
 
-    return (u_mean/total_batches, y_mean/total_batches,
-           torch.sqrt(u_var/total_batches), torch.sqrt(y_var/total_batches))
+    u_mean = u_mean.numpy()
+    y_mean = y_mean.numpy()
+    u_var = u_var.numpy()
+    y_var = y_var.numpy()
+
+    u_normalizer = Normalizer1D(np.sqrt(u_var/total_batches)*variance_scaler, u_mean/total_batches)
+    y_normalizer = Normalizer1D(np.sqrt(y_var/total_batches)*variance_scaler, y_mean/total_batches)
+    return u_normalizer, y_normalizer
 
 
 def run(options=None, load_model=None, mode_interactive=True):
@@ -276,6 +278,9 @@ def run(options=None, load_model=None, mode_interactive=True):
         options["model_options"] = ckpt_options["model_options"]
         options["dataset_options"] = ckpt_options["dataset_options"]
 
+        options["normalize"] = ckpt_options["normalize"]
+        options["normalize_n_std"] = ckpt_options["normalize_n_std"]
+
         options = recursive_merge(ckpt_options, options)
     elif options is None:
         options = create_full_options_dict()  # Default values
@@ -285,8 +290,12 @@ def run(options=None, load_model=None, mode_interactive=True):
                                   dataset_options=options["dataset_options"],
                                   train_batch_size=options["train_options"]["batch_size"],
                                   test_batch_size=options["test_options"]["batch_size"])
-    # Compute mean and var
-    u_mean, y_mean, u_std, y_std = compute_mean(loaders['train'], options["cuda"])
+
+    # Compute normalizers
+    if options["normalize"]:
+        normalizer_input, normalizer_output = compute_normalizers(loaders['train'], options["normalize_n_std"])
+    else:
+        normalizer_input = normalizer_output = None
 
     # Define model
     modelstate = ModelState(seed=options["seed"],
@@ -296,12 +305,8 @@ def run(options=None, load_model=None, mode_interactive=True):
                             init_lr=options["train_options"]["init_lr"],
                             model=options["model"],
                             model_options=options["model_options"],
-                            normalize=options["normalize"],
-                            normalize_n_std=options["normalize_n_std"],
-                            u_mean=u_mean,
-                            y_mean=y_mean,
-                            u_std=u_std,
-                            y_std=y_std)
+                            normalizer_input=normalizer_input,
+                            normalizer_output=normalizer_output)
 
     # Restore model
     if load_model is not None:
