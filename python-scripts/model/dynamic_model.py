@@ -37,7 +37,6 @@ class DynamicModel(nn.Module):
         self.kwargs = kwargs
         self.ar = ar
         self.io_delay = io_delay
-        self.is_cuda = False
         self.normalizer_input = normalizer_input
         self.normalizer_output = normalizer_output
 
@@ -53,13 +52,6 @@ class DynamicModel(nn.Module):
             raise Exception("Unimplemented model")
 
 
-    def cuda(self, device=None):
-        self.is_cuda = True
-        super(DynamicModel, self).cuda(device)
-
-    def cpu(self):
-        self.is_cuda = False
-        super(DynamicModel, self).cpu()
 
     @property
     def num_model_inputs(self):
@@ -85,9 +77,7 @@ class DynamicModel(nn.Module):
         if self.ar:
             rf = self.m.receptive_field
             num_batches, _, seq_len = u.size()
-            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1)
-            if self.is_cuda:
-                y_sim = y_sim.cuda()
+            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1, device=u.device)
 
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
 
