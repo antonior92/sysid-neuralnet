@@ -11,8 +11,9 @@ class Normalizer1D(nn.Module):
 
     def __init__(self, scale, offset):
         super(Normalizer1D, self).__init__()
-        self.scale = torch.tensor(scale, dtype=torch.float32) + self._epsilon
-        self.offset = torch.tensor(offset, dtype=torch.float32)
+        self.register_buffer('scale', torch.tensor(scale + self._epsilon, dtype=torch.float32))
+        self.register_buffer('offset', torch.tensor(offset, dtype=torch.float32))
+
 
     def normalize(self, x):
         x = x.permute(0, 2, 1)
@@ -50,6 +51,7 @@ class DynamicModel(nn.Module):
             self.m.set_mode(self.mode)
         else:
             raise Exception("Unimplemented model")
+
 
     def cuda(self, device=None):
         self.is_cuda = True
