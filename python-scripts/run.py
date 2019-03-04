@@ -141,7 +141,7 @@ def clean_options(options):
 
     # Specify used dataset and model options
     options["dataset_options"] = recursive_merge(dataset_options, options["dataset_options"], allow_new=True)
-    options["model_options"] = recursive_merge(options["model_options"], model_options, allow_new=True)
+    options["model_options"] = recursive_merge(model_options, options["model_options"], allow_new=True)
     return options
 
 
