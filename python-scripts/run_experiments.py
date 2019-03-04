@@ -1,7 +1,6 @@
 from multiprocessing import Process
 import run
 import time
-import math
 
 
 def sub_run(dict):
@@ -10,21 +9,20 @@ def sub_run(dict):
 
 
 option_dicts = []
-mlp_max_past_input_list = [2*2**i for i in range(7)]
+mlp_max_past_input_list = [i for i in range(10)]
 mlp_hidden_size_list = [4*2**i for i in range(7)]
-io_delay_list = [0, 1, 2, 3]
-
-seqlen_list = [32*2**i for i in range(6)]
-batchsize_list = [8*2**i for i in range(6)]
-lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
-
-for max_past_input in mlp_max_past_input_list:
-    for hidden_size in mlp_hidden_size_list:
-        option_dicts.append({"logdir": "log/mlp_with_normalization", "cuda": True,
-                             "dataset": "silverbox", "model": "mlp",
-                             "model_options": {"max_past_input": max_past_input, "hidden_size": hidden_size}
-                             }
-                            )
+io_delay_list = [0, 1, 2]
+for io_delay in io_delay_list:
+    for max_past_input in mlp_max_past_input_list:
+        for hidden_size in mlp_hidden_size_list:
+            option_dicts.append({"logdir": "log/chen_example/mlp_networks_1", "cuda": True,
+                                 "dataset": "chen",
+                                 "model": "mlp",
+                                 "model_options": {"max_past_input": max_past_input,
+                                                   "hidden_size": hidden_size,
+                                                   "io_delay": io_delay}
+                                 }
+                                )
 
 
 num_processes = 8
