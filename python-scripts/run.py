@@ -202,10 +202,6 @@ def create_full_options_dict(*option_dicts):
 
     merged_options = copy.deepcopy(default_options)
 
-    # Options specified in file
-
-
-    # Options specified in commandline dict
     for option_dict in reversed(option_dicts):
         if option_dict is not None:
             if isinstance(option_dict, str):
@@ -265,7 +261,6 @@ def run(options=None, load_model=None, mode_interactive=True):
         set_redirects(options["logdir"])
 
     if load_model is not None:
-
         ckpt_options = create_full_options_dict(os.path.join(os.path.dirname(load_model), 'options.txt'))
 
         if options is None:
