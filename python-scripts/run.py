@@ -73,13 +73,13 @@ default_options_test = {
 }
 
 default_options = {
-    'cuda': False,
+    'cuda': True,
     'seed': 1111,
     'logdir': None,
     'run_name': None,
     'load_model': None,
     'evaluate_model': False,
-    'normalize': True,
+    'normalize': False,
     'normalize_n_std': 1,
     'train_options': default_options_train,
     'test_options': default_options_test,
