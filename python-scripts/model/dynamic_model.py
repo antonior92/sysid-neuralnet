@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from . import MLP
-from . import TCN
+from . import MLP, TCN, LSTM
 from model.utils import RunMode
 
 
@@ -21,13 +20,12 @@ class DynamicModel(nn.Module):
         self.normalizer_output = normalizer_output
 
         # Initialize model
-        self.mode = RunMode.ONE_STEP_AHEAD
         if model == 'mlp':
             self.m = MLP(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
-            self.m.set_mode(self.mode)
         elif model == 'tcn':
             self.m = TCN(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
-            self.m.set_mode(self.mode)
+        elif model == 'lstm':
+            self.m = LSTM(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
         else:
             raise Exception("Unimplemented model")
 
@@ -40,14 +38,19 @@ class DynamicModel(nn.Module):
         self.m.set_mode(mode)
 
     def one_step_ahead(self, u, y):
-
+        num_batches, _, _ = u.size()
         u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
         if self.ar:
             y_delayed = F.pad(y[:, :, :-1], [1, 0])
             x = torch.cat((u_delayed, y_delayed), 1)
         else:
             x = u_delayed
-        y_pred = self.m(x)
+
+        if self.m.has_internal_state:
+            state_0 = self.m.init_hidden(num_batches)
+            y_pred, state_f = self.m(x, state_0)
+        else:
+            y_pred = self.m(x)
 
         return y_pred
 
@@ -59,6 +62,9 @@ class DynamicModel(nn.Module):
 
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
 
+            if self.m.has_internal_state:
+                state = self.m.init_hidden(num_batches)
+
             for i in range(seq_len):
                 if i < rf:
                     y_in = y_sim[:, :, :i+1]
@@ -69,7 +75,12 @@ class DynamicModel(nn.Module):
 
                 x = torch.cat((u_in, y_in), 1)
 
-                y_sim[:, :, i+1] = self.m(x)[:, :, -1]
+                if self.m.has_internal_state:
+                    y_next, state = self.m(x, state)
+                    y_sim[:, :, i + 1] = y_next[:, :, -1]
+                else:
+                    y_next = self.m(x)
+                    y_sim[:, :, i + 1] = y_next[:, :, -1]
         else:
             y_sim = self.one_step_ahead(u, y)
         return y_sim[..., 1:]

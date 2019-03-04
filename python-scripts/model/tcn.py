@@ -28,11 +28,11 @@ from .utils import RunMode, DynamicModule
 class TemporalBlock(DynamicModule):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, dropout=0.2):
         super(TemporalBlock, self).__init__()
-
         # The padding of one conv and the receptive field of the entire module
         self.padding = (kernel_size - 1) * dilation
         self.receptive_field = 2 * self.padding + 1
         self.requested_output = None
+        self.has_internal_state = False
 
         self.pad1 = nn.ConstantPad1d((self.padding, 0), 0)
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
@@ -102,6 +102,7 @@ class TCN(DynamicModule):
             temporal_module.requested_output = requested_output
             requested_output += temporal_module.receptive_field - 1
         self.receptive_field = requested_output
+        self.has_internal_state = False
 
     def forward(self, x):
         y = self.network(x)

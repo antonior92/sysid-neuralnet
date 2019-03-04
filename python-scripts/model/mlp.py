@@ -8,6 +8,7 @@ class MLP(DynamicModule):
     def __init__(self, num_inputs, num_outputs, hidden_size, max_past_input):
         super(MLP, self).__init__()
         self.receptive_field = max_past_input
+        self.has_internal_state = False
 
         self.pad = nn.ConstantPad1d((self.receptive_field - 1, 0), 0)
 
@@ -17,9 +18,9 @@ class MLP(DynamicModule):
         conv2 = nn.Conv1d(hidden_size, num_outputs, 1)
 
         # Due to backward compatibility the modules are named as follows
-        self.net = nn.Sequential(OrderedDict([('0', conv1),
-                                             ("2", sigmoid),
-                                             ("3", conv2)]))
+        self.net = nn.Sequential(OrderedDict([("0", conv1),
+                                              ("2", sigmoid),
+                                              ("3", conv2)]))
 
     def set_mode(self, mode):
         self.mode = mode

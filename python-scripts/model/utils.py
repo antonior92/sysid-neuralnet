@@ -32,12 +32,17 @@ class DynamicModule(nn.Module):
         super(DynamicModule, self).__init__()
         self.mode = RunMode.ONE_STEP_AHEAD
         self.receptive_field = None
+        self.has_internal_state = None
 
     def set_mode(self, mode):
         raise NotImplementedError
 
     def forward(self, *input):
         raise NotImplementedError
+
+    def init_hidden(self, batch_size):
+        if self.has_internal_state:
+            raise NotImplementedError
 
 
 def copy_module_params(src, dest):
