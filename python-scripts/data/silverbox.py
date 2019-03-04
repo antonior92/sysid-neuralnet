@@ -17,7 +17,7 @@ def create_silverbox_datasets(seq_len, seq_len_eval=None):
         Maximum lenght for a batch on the training set. If `seq_len`
         is smaller than the total data length, the training data will
         be further divided in batches.
-    seq_len_eval: int (option)
+    seq_len_eval: int (optional)
         Maximum lenght for a batch on the validatiteston and  set. If `seq_len`
         is smaller than the total data length, the training data will
         be further divided in batches
