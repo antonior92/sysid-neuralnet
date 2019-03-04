@@ -3,6 +3,7 @@ import run
 import numpy as np
 import matplotlib.pyplot as plt
 import data.loader as loader
+from model.utils import RunMode
 
 plotly = True
 def show_fig(fig):
@@ -14,11 +15,11 @@ def show_fig(fig):
     else:
         plt.show()
 
-(model, _, options) = run.run({"cuda":False, 'dataset_options': {'seq_len_eval': None}},
-                              load_model="log/mlp_networks_2/train_Wed Feb 27 14:54:48 2019/best_model.pt")
+(model, _, options) = run.run({"cuda": False},
+                              load_model="log/train_Wed Feb 27 14:54:48 2019/best_model.pt")
 
 model.cpu()
-model.set_mode("free-run-simulation")
+model.set_mode(RunMode.FREE_RUN_SIMULATION)
 
 loaders = loader.load_dataset("silverbox", {'seq_len': 1000, 'seq_len_eval': None}, 10, 10)
 
@@ -31,7 +32,6 @@ for i, (u, y) in enumerate(loaders["test"]):
 all_output = np.concatenate(all_output, 0)
 all_y = np.concatenate(all_y, 0)
 
-fig, ax = plt.subplots()
 plt.plot(all_y[-1, 0, :])
 plt.plot(all_output[-1, 0, :])
 plt.plot(all_output[-1, 0, :]-all_y[-1, 0, :])
