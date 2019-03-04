@@ -101,7 +101,7 @@ def maybe_download_and_extract():
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # For testing purposes, should be removed afterwards
-    train, val, test = create_silverbox_datasets(seq_len=1000)
+    train, val, test = create_silverbox_datasets(seq_len=1000, seq_len_eval=1000)
     # Convert back from torch tensor to numpy vector
     u_train = train.u.reshape(-1)
     y_train = train.y.reshape(-1)

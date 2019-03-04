@@ -73,7 +73,7 @@ default_options_test = {
 }
 
 default_options = {
-    'cuda': True,
+    'cuda': False,
     'seed': 1111,
     'logdir': None,
     'run_name': None,
@@ -294,7 +294,6 @@ def run(options=None, load_model=None, mode_interactive=True):
 
     # Define model
     modelstate = ModelState(seed=options["seed"],
-                            cuda=options["cuda"],
                             nu=loaders["train"].nu, ny=loaders["train"].ny,
                             optimizer=options["optimizer"],
                             init_lr=options["train_options"]["init_lr"],
@@ -302,6 +301,9 @@ def run(options=None, load_model=None, mode_interactive=True):
                             model_options=options["model_options"],
                             normalizer_input=normalizer_input,
                             normalizer_output=normalizer_output)
+
+    if options["cuda"]:
+        modelstate.model.cuda()
 
     # Restore model
     if load_model is not None:

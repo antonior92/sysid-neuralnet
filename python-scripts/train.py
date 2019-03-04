@@ -1,5 +1,6 @@
 # %% Initialization
 import torch.nn as nn
+import torch.nn.functional as F
 import torch
 import time
 
@@ -9,14 +10,15 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
         modelstate.model.eval()
         total_vloss = 0
         total_batches = 0
-        for i, (u, y) in enumerate(loader_valid):
-            if cuda:
-                u = u.cuda()
-                y = y.cuda()
-            output = modelstate.model(u, y)
-            vloss = nn.MSELoss()(output, y)
-            total_batches += u.size()[0]
-            total_vloss += u.size()[0]*vloss.item()
+        with torch.no_grad():
+            for i, (u, y) in enumerate(loader_valid):
+                if cuda:
+                    u = u.cuda()
+                    y = y.cuda()
+                output = modelstate.model(u, y)
+                vloss = F.mse_loss(output, y)
+                total_batches += u.size()[0]
+                total_vloss += u.size()[0]*vloss.item()
 
         return total_vloss/total_batches
 
@@ -28,10 +30,10 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
             if cuda:
                 u = u.cuda()
                 y = y.cuda()
-            modelstate.optimizer.zero_grad()
 
+            modelstate.optimizer.zero_grad()
             output = modelstate.model(u, y)
-            loss = nn.MSELoss()(output, y)
+            loss = F.mse_loss(output, y)
             loss.backward()
             modelstate.optimizer.step()
 

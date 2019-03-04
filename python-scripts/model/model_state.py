@@ -13,16 +13,10 @@ class ModelState:
     optimizer
     """
 
-    def __init__(self, seed, cuda, nu, ny, optimizer, init_lr, model, model_options, **kwargs):
+    def __init__(self, seed, nu, ny, optimizer, init_lr, model, model_options, **kwargs):
         torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            if not cuda:
-                print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
         self.model = DynamicModel(model, nu, ny, **model_options, **kwargs)
-
-        if cuda:
-            self.model.cuda()
 
         # Optimization parameters
         self.optimizer = getattr(optim, optimizer['optim'])(self.model.parameters(), lr=init_lr)
