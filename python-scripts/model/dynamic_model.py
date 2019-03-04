@@ -28,6 +28,7 @@ class DynamicModel(nn.Module):
             self.m = LSTM(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
         else:
             raise Exception("Unimplemented model")
+        self.mode = self.m.mode
 
     @property
     def num_model_inputs(self):

@@ -10,7 +10,7 @@ class LSTM(DynamicModule):
 
         self.decoding_layers = nn.Conv1d(hidden_size, num_outputs, 1)
         self.receptive_field = 1
-        self.has_internal_state = False
+        self.has_internal_state = True
 
     def set_mode(self, mode):
         self.mode = mode
