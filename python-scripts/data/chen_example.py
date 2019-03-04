@@ -1,18 +1,25 @@
-"""
-Implement data generator for the example used in:
-
-S. Chen, S. A. Billings, P. M. Grant, Non-Linear System Identification Using
-Neural Networks, International Journal of Control 51 (6) (1990) 1191–
-1214.
-"""
-# %% Prepare
 import numpy as np
 import numpy.random as rd
-
-from data.dataset_ext import DatasetExt
+from data.base import DatasetExt
 
 
 class ChenDataset(DatasetExt):
+    """Implement data generator for nonlinear example in _[1].
+
+    Parameters
+    ----------
+    seq_len: int
+        Sequence lenght for a batch on the dataset.
+    ntotbatch: int
+        Total number of batches.
+    seed: int
+        Random seed.
+
+    References
+    ----------
+     .. [1] S. Chen, S. A. Billings, P. M. Grant, Non-Linear System Identification Using
+            Neural Networks, International Journal of Control 51 (6) (1990) 1191–1214.
+    """
     def __init__(self, seq_len, ntotbatch, seed=1):
         self.seed = seed
         self.rng = rd.RandomState(seed)
@@ -58,12 +65,9 @@ class ChenDataset(DatasetExt):
 
 
 if __name__ == "__main__":
-
     from torch.utils.data import DataLoader
-
     loader = DataLoader(ChenDataset(seq_len=5, ntotbatch=1000), batch_size=4,
                         shuffle=True, num_workers=4)
-
     for d in loader:
         print(d)
         quit()

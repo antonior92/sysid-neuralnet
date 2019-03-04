@@ -1,5 +1,3 @@
-from .chen_example import ChenDataset
-from .dataset_ext import DatasetExt, DataLoaderExt
-from .silver_box import SilverBoxDataset
+from .loader import load_dataset
 
-__all__ = ['chen_example', 'dataset_ext', 'silver_box']
+__all__ = ['load_dataset']
