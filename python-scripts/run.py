@@ -73,7 +73,7 @@ default_options_test = {
 }
 
 default_options = {
-    'cuda': False,
+    'cuda': True,
     'seed': 1111,
     'logdir': None,
     'run_name': None,
