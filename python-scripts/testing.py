@@ -1,9 +1,11 @@
 # %%
+import torch
 import run
 import numpy as np
 import matplotlib.pyplot as plt
 import data.loader as loader
 from model.utils import RunMode
+
 
 plotly = True
 def show_fig(fig):
@@ -20,18 +22,21 @@ def show_fig(fig):
 
 model.cpu()
 model.set_mode(RunMode.FREE_RUN_SIMULATION)
+model.eval()
 
 loaders = loader.load_dataset("silverbox", {'seq_len': 1000, 'seq_len_eval': None}, 10, 10)
 
 all_output = []
 all_y = []
 for i, (u, y) in enumerate(loaders["test"]):
-    all_output += [model(u, y).detach()]
-    all_y += [y]
+    with torch.no_grad():
+        all_output += [model(u, y).detach()]
+        all_y += [y]
 
 all_output = np.concatenate(all_output, 0)
 all_y = np.concatenate(all_y, 0)
 
+fig, ax = plt.subplots()
 plt.plot(all_y[-1, 0, :])
 plt.plot(all_output[-1, 0, :])
 plt.plot(all_output[-1, 0, :]-all_y[-1, 0, :])
