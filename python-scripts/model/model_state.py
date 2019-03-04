@@ -28,30 +28,17 @@ class ModelState:
         self.optimizer = getattr(optim, optimizer['optim'])(self.model.parameters(), lr=init_lr)
 
     def load_model(self, path, name='model.pt'):
-        if os.path.isfile(path):
-            try:
-                file = path
-                ckpt = torch.load(file, map_location=lambda storage, loc: storage)
-                self.model.load_state_dict(ckpt["model"])
-                self.optimizer.load_state_dict(ckpt["optimizer"])
-                epoch = ckpt['epoch']
-            except NotADirectoryError:
-                raise Exception("Could not find model: " + file)
-
-        else:
-            try:
-                file = os.path.join(path, name)
-                ckpt = torch.load(file, map_location=lambda storage, loc: storage)
-                self.model.load_state_dict(ckpt["model"])
-                self.optimizer.load_state_dict(ckpt["optimizer"])
-                epoch = ckpt['epoch']
-            except NotADirectoryError:
-                raise Exception("Could not find model: " + file)
-
+        file = path if os.path.isfile(path) else os.path.join(path, name)
+        try:
+            ckpt = torch.load(file, map_location=lambda storage, loc: storage)
+        except NotADirectoryError:
+            raise Exception("Could not find model: " + file)
+        self.model.load_state_dict(ckpt["model"])
+        self.optimizer.load_state_dict(ckpt["optimizer"])
+        epoch = ckpt['epoch']
         return epoch
 
     def save_model(self, epoch, vloss, elapsed_time,  path, name='model.pt'):
-
         torch.save({
                 'epoch': epoch,
                 'model': self.model.state_dict(),
@@ -60,4 +47,3 @@ class ModelState:
                 'elapsed_time': elapsed_time,
             },
             os.path.join(path, name))
-
