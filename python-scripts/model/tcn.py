@@ -40,7 +40,7 @@ class TemporalBlock(DynamicModule):
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
 
-        self.pad2  = nn.ConstantPad1d((self.padding, 0), 0)
+        self.pad2 = nn.ConstantPad1d((self.padding, 0), 0)
         self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size,
                                            stride=stride, padding=0, dilation=dilation))
         self.relu2 = nn.ReLU()
@@ -81,7 +81,6 @@ class TemporalBlock(DynamicModule):
             self.pad2.padding = (self.padding, 0)
 
 
-
 class TCN(DynamicModule):
     def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2):
         super(TCN, self).__init__()
@@ -93,7 +92,8 @@ class TCN(DynamicModule):
             dilation_size = dilation_sizes[i]
             in_channels = num_inputs if i == 0 else n_channels[i-1]
             out_channels = n_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1, dilation=dilation_size, dropout=dropout)]
+            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1,
+                                     dilation=dilation_size, dropout=dropout)]
         self.network = nn.Sequential(*layers)
         self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
 
@@ -111,4 +111,3 @@ class TCN(DynamicModule):
         self.mode = mode
         for temporal_module in self.network:
             temporal_module.set_mode(mode)
-

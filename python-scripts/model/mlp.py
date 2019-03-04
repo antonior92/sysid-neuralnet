@@ -1,9 +1,9 @@
 import torch.nn as nn
-from .utils import RunMode
+from .utils import RunMode, DynamicModule
 from collections import OrderedDict
 
 
-class MLP(nn.Module):
+class MLP(DynamicModule):
     """Shallow 2-layer neural network with sigmoidal activation function."""
     def __init__(self, num_inputs, num_outputs, hidden_size, max_past_input):
         super(MLP, self).__init__()
@@ -25,7 +25,6 @@ class MLP(nn.Module):
         self.mode = mode
         if mode == RunMode.ONE_STEP_AHEAD:
             self.pad.padding = (self.receptive_field - 1, 0)
-
 
     def forward(self, x):
         if self.mode == RunMode.FREE_RUN_SIMULATION:

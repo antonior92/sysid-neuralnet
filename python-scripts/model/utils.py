@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from enum import Enum
 
@@ -5,6 +6,37 @@ from enum import Enum
 class RunMode(str, Enum):
     FREE_RUN_SIMULATION = 'free-run-simulation'
     ONE_STEP_AHEAD = 'one-step-ahead'
+
+
+class Normalizer1D:
+    _epsilon = 1e-16
+
+    def __init__(self, scale, offset):
+        self.scale = torch.tensor(scale, dtype=torch.float32) + self._epsilon
+        self.offset = torch.tensor(offset, dtype=torch.float32)
+
+    def normalize(self, x):
+        x = x.permute(0, 2, 1)
+        x = (x-self.offset)/self.scale
+        return x.permute(0, 2, 1)
+
+    def unnormalize(self, x):
+        x = x.permute(0, 2, 1)
+        x = x*self.scale + self.offset
+        return x.permute(0, 2, 1)
+
+
+class DynamicModule(nn.Module):
+    def __init__(self):
+        super(DynamicModule, self).__init__()
+        self.mode = RunMode.ONE_STEP_AHEAD
+        self.receptive_field = None
+
+    def set_mode(self, mode):
+        raise NotImplementedError
+
+    def forward(self, *input):
+        raise NotImplementedError
 
 
 def copy_module_params(src, dest):
@@ -18,13 +50,3 @@ def copy_module_params(src, dest):
         except:
             pass
     return dest
-
-
-class DynamicModule(nn.Module):
-    def __init__(self):
-        super(DynamicModule,self).__init__()
-        self.mode = RunMode.ONE_STEP_AHEAD
-        self.receptive_field = None
-
-    def set_mode(self, mode):
-        raise NotImplementedError

@@ -6,26 +6,6 @@ from . import TCN
 from model.utils import RunMode
 
 
-class Normalizer1D(nn.Module):
-    _epsilon = 1e-16
-
-    def __init__(self, scale, offset):
-        super(Normalizer1D, self).__init__()
-        self.register_buffer('scale', torch.tensor(scale + self._epsilon, dtype=torch.float32))
-        self.register_buffer('offset', torch.tensor(offset, dtype=torch.float32))
-
-
-    def normalize(self, x):
-        x = x.permute(0, 2, 1)
-        x = (x-self.offset)/self.scale
-        return x.permute(0, 2, 1)
-
-    def unnormalize(self, x):
-        x = x.permute(0, 2, 1)
-        x = x*self.scale + self.offset
-        return x.permute(0, 2, 1)
-
-
 class DynamicModel(nn.Module):
     def __init__(self, model, num_inputs, num_outputs, ar, io_delay, normalizer_input=None, normalizer_output=None,
                  *args, **kwargs):
@@ -50,8 +30,6 @@ class DynamicModel(nn.Module):
             self.m.set_mode(self.mode)
         else:
             raise Exception("Unimplemented model")
-
-
 
     @property
     def num_model_inputs(self):
