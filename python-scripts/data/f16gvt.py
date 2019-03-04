@@ -32,9 +32,9 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
     Based on https://github.com/locuslab/TCN/blob/master/TCN/lambada_language/utils.py
     """
     # Extract input and output data F16
-    mat_file_path = "F16GVT_Files/F16Data_SpecialOddMSine_Level2.mat"
+    mat_file_path = "F16GVT_Files/BenchmarkData/F16Data_SpecialOddMSine_Level2.mat"
     mat_two = scipy.io.loadmat(maybe_download_and_extract(mat_file_path))
-    mat_file_path = "F16GVT_Files/F16Data_SpecialOddMSine_Level2_Validation.mat"
+    mat_file_path = "F16GVT_Files/BenchmarkData/F16Data_SpecialOddMSine_Level2_Validation.mat"
     mat_two_test = scipy.io.loadmat(maybe_download_and_extract(mat_file_path))
     u = mat_two['Force'] # Input training and validation set
     y = mat_two['Acceleration'] # Output training and validation set
@@ -52,7 +52,7 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
     n_y = 3 # Number of outputs
 
     # Extract training data
-    u_train = u[0:r, :].reshape(r * n)
+    u_train = u[0:r, :].reshape(r * n, 1)
     y_train = y[:, 0:r, :].transpose((1, 2, 0)).reshape((r * n, n_y))
 #    # Should be equivalent to:
 #    u_train = np.zeros(r * n)
@@ -63,7 +63,7 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
 #            y_train[i * n + np.arange(n), j] = y[j, i, :]
 
     # Extract validation data
-    u_val = u[r + np.arange(r_val), :].reshape(r_val * n)
+    u_val = u[r + np.arange(r_val), :].reshape(r_val * n, 1)
     y_val = y[:, r + np.arange(r_val), :].transpose((1, 2, 0)).reshape((r_val * n, n_y))
 #    # Should be equivalent to:
 #    u_val = np.zeros(r_val * n)
@@ -74,7 +74,7 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
 #            y_val[i * n + np.arange(n)] = y[j, r + i, :]
 
     # Extract test data
-    u_test = u_test.reshape(r_test * n)
+    u_test = u_test.reshape(r_test * n, 1)
     y_test = y_test.transpose((2, 1, 0)).reshape((r_test * n, n_y))
 
     dataset_train = IODataset(u_train, y_train, seq_len)
@@ -114,16 +114,16 @@ def maybe_download_and_extract(mat_file_path):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # For testing purposes, should be removed afterwards
-    train, val, test = create_silverbox_datasets(seq_len=1000)
+    train, val, test = create_f16gvt_datasets(seq_len=1000)
     # Convert back from torch tensor to numpy vector
     u_train = train.u.reshape(-1)
-    y_train = train.y.reshape(-1)
+    y_train = train.y.reshape((-1, 3))
     k_train = 1 + np.arange(len(u_train))
     u_val = val.u.reshape(-1)
-    y_val = val.y.reshape(-1)
+    y_val = val.y.reshape((-1, 3))
     k_val = 1 + np.arange(len(u_val))
     u_test = test.u.reshape(-1)
-    y_test = test.y.reshape(-1)
+    y_test = test.y.reshape((-1, 3))
     k_test = 1 + np.arange(len(u_test))
     # Plot training data
     plt.figure()
