@@ -21,7 +21,7 @@ for max_past_input in mlp_max_past_input_list:
     for hidden_size in mlp_hidden_size_list:
         option_dicts.append({"logdir": "log/mlp_with_normalization", "cuda": True,
                              "dataset": "silverbox", "model": "mlp",
-                             "normalization": True, "normalization_n_std": 2,
+                             "normalize": True, "normalize_n_std": 2,
                              "model_options": {"max_past_input": max_past_input, "hidden_size": hidden_size}
                              }
                             )
