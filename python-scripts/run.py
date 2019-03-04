@@ -7,7 +7,7 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
-from model.dynamic_model import Normalizer1D
+from model.utils import Normalizer1D
 import torch
 import numpy as np
 
