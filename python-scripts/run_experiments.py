@@ -19,7 +19,7 @@ lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
 for max_past_input in mlp_max_past_input_list:
     for hidden_size in mlp_hidden_size_list:
-        option_dicts.append({"logdir": "log/mlp_with_normalization_3", "cuda": False,
+        option_dicts.append({"logdir": "log/mlp_with_normalization_3", "cuda": True,
                              "dataset": "silverbox", "model": "mlp",
                              "normalize": True, "normalize_n_std": 1,
                              "model_options": {"max_past_input": max_past_input, "hidden_size": hidden_size,
