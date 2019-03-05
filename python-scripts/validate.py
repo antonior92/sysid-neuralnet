@@ -20,8 +20,7 @@ def show_fig(fig):
 
 
 # Get files names
-folder_list = glob.glob(os.path.join('log/mlp_networks', 'train_*'))
-folder_list += glob.glob(os.path.join('log/mlp_networks_2', 'train_*'))
+folder_list = glob.glob(os.path.join('log/chen/mlp_networks_1', 'train_*'))
 
 # Parse dictionaries
 def single_indexed_dict(in_dict, d=None, name=''):
@@ -45,8 +44,11 @@ options_dict = {}
 for folder in folder_list:
     options_file = os.path.join(folder, 'options.txt')
     model_file = os.path.join(folder, 'best_model.pt')
-    with open(options_file, 'r') as f:
-        options_dict = json.loads(f.read())
+    try:
+        with open(options_file, 'r') as f:
+            options_dict = json.loads(f.read())
+    except:
+        options_dict = {}
     try:
         # Gets model info
         model_pth = torch.load(model_file,  map_location='cpu')
@@ -64,8 +66,12 @@ results = pd.concat(df, sort=False)
 failed_executions = results[np.isnan(results.vloss)]
 
 
+# Filter results
+results = results[results['model_options_io_delay'] == 1]
+
 # Plot example
 fig, ax = plt.subplots()
-ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',data=results[results.model_options_io_delay==0][results.model_options_max_past_input < 100][results.model_options_hidden_size < 100], legend='full')
+ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',
+                   data=results, legend='full')
 plt.legend(bbox_to_anchor=(1.1, 1.05))
 show_fig(fig)
