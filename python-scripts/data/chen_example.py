@@ -27,6 +27,7 @@ class ChenDataset(DatasetExt):
         self.rng = rd.RandomState(seed)
         self.seq_len = seq_len
         self.ntotbatch = ntotbatch
+        self.sd_v, self.sd_w = sd_v, sd_w
         self.u, self.y = self._gen_data()
         self.sd_v, self.sd_w = sd_v, sd_w
 
