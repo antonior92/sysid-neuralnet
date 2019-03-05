@@ -30,6 +30,23 @@ for io_delay in io_delay_list:
                                 )
 
 
+for io_delay in io_delay_list:
+    for max_past_input in mlp_max_past_input_list:
+        for hidden_size in mlp_hidden_size_list:
+            option_dicts.append({"logdir": "log/chen_example/mlp_networks_1", "cuda": True,
+                                 "dataset": "chen",
+                                 "model": "mlp",
+                                 "model_options": {"max_past_input": max_past_input,
+                                                   "hidden_size": hidden_size,
+                                                   "io_delay": io_delay},
+                                "dataset_options": {'train': {'sd_v': 0.8,
+                                                              'sd_w': 0.8},
+                                                    'valid': {'sd_v': 0.8,
+                                                              'sd_w': 0.8},
+                                                    'test': {'sd_v': 0.8,
+                                                             'sd_w': 0.8}}}
+                                )
+
 
 num_processes = 8
 processes = []
