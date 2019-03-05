@@ -91,7 +91,7 @@ class DynamicModel(nn.Module):
         if io_delay > 0:
             u_delayed = F.pad(u[:, :, :-io_delay], [io_delay, 0])
         elif io_delay < 0:
-            u_delayed = F.pad(u[:, :, io_delay:], [0, io_delay])
+            u_delayed = F.pad(u[:, :, -io_delay:], [0, -io_delay])
         else:
             u_delayed = u
         return u_delayed
