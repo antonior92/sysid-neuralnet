@@ -6,12 +6,12 @@ import time
 
 
 def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid, train_options):
-    def validate():
+    def validate(loader):
         modelstate.model.eval()
         total_vloss = 0
         total_batches = 0
         with torch.no_grad():
-            for i, (u, y) in enumerate(loader_valid):
+            for i, (u, y) in enumerate(loader):
                 if cuda:
                     u = u.cuda()
                     y = y.cuda()
@@ -56,7 +56,7 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
 
     # Train
     epoch = start_epoch
-    vloss = validate()
+    vloss = validate(loader_valid)
     all_losses = []
     all_vlosses = []
     best_vloss = vloss
@@ -66,8 +66,9 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
         modelstate.model.set_mode(train_options['training_mode'])
         for epoch in range(start_epoch, start_epoch + train_options["epochs"]+1):
             # Train and validate
-            loss = train(epoch)
-            vloss = validate()
+            train(epoch)
+            vloss = validate(loader_valid)
+            loss = validate(loader_train)
             # Save losses
             all_losses += [loss]
             all_vlosses += [vloss]

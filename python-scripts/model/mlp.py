@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 class MLP(DynamicModule):
     """Shallow 2-layer neural network with sigmoidal activation function."""
-    def __init__(self, num_inputs, num_outputs, hidden_size, max_past_input):
+    def __init__(self, num_inputs, num_outputs, hidden_size, max_past_input, activation_fn):
         super(MLP, self).__init__()
         self.receptive_field = max_past_input
         self.has_internal_state = False
@@ -14,12 +14,19 @@ class MLP(DynamicModule):
 
         conv1 = nn.Conv1d(num_inputs, hidden_size, kernel_size=max_past_input, padding=0)
 
-        sigmoid = nn.Sigmoid()
+        if activation_fn == "sigmoid":
+            fn = nn.Sigmoid()
+        elif activation_fn == "relu":
+            fn = nn.ReLU()
+        elif activation_fn == "elu":
+            fn = nn.ELU()
+        else:
+            raise Exception("Activation function not implemented: "+ activation_fn)
         conv2 = nn.Conv1d(hidden_size, num_outputs, 1)
 
         # Due to backward compatibility the modules are named as follows
         self.net = nn.Sequential(OrderedDict([("0", conv1),
-                                              ("2", sigmoid),
+                                              ("2", fn),
                                               ("3", conv2)]))
 
     def set_mode(self, mode):

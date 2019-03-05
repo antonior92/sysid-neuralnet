@@ -27,10 +27,11 @@ default_options_tcn = {
 }
 
 default_options_mlp = {
-    'hidden_size': 16,
-    'max_past_input': 32,
+    'hidden_size': 8,
+    'max_past_input': 4,
     'ar': True,
-    'io_delay': 0
+    'io_delay': 0,
+    'activation_fn': 'sigmoid'
 }
 
 default_options_chen = {
@@ -96,7 +97,7 @@ default_options = {
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
-    'model': 'tcn',
+    'model': 'mlp',
     'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
