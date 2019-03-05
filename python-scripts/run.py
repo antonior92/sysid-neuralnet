@@ -38,15 +38,21 @@ default_options_chen = {
     'seq_len': 1000,
     'train': {
         'ntotbatch': 10,
-        'seed': 1
-     },
+        'seed': 1,
+        'sd_v': 0.1,
+        'sd_w': 0.5
+    },
     'valid': {
         'ntotbatch': 10,
-        'seed': 2
+        'seed': 2,
+        'sd_v': 0.1,
+        'sd_w': 0.5
     },
     'test': {
         'ntotbatch': 10,
-        'seed': 3
+        'seed': 3,
+        'sd_v': 0.1,
+        'sd_w': 0.5
     }
 }
 

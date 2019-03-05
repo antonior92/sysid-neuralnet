@@ -14,25 +14,28 @@ class ChenDataset(DatasetExt):
         Total number of batches.
     seed: int
         Random seed.
+    sd_v, sd_w: float
+        Standard deviation for process and output noise (respectively)
 
     References
     ----------
      .. [1] S. Chen, S. A. Billings, P. M. Grant, Non-Linear System Identification Using
             Neural Networks, International Journal of Control 51 (6) (1990) 1191–1214.
     """
-    def __init__(self, seq_len, ntotbatch, seed=1):
+    def __init__(self, seq_len, ntotbatch, seed=1, sd_v=0.1, sd_w=0.5):
         self.seed = seed
         self.rng = rd.RandomState(seed)
         self.seq_len = seq_len
         self.ntotbatch = ntotbatch
         self.u, self.y = self._gen_data()
+        self.sd_v, self.sd_w = sd_v, sd_w
 
     def _gen_data(self):
         u = np.zeros((self.ntotbatch, 1, self.seq_len))
         y = np.zeros((self.ntotbatch, 1, self.seq_len))
         for i in range(self.ntotbatch):
             u[i, 0, :] = self._generate_random_input(self.seq_len, 5)
-            y[i, 0, :] = self._simulate_system(u[i, 0, :], sd_v=0.1, sd_w=0.5)
+            y[i, 0, :] = self._simulate_system(u[i, 0, :], self.sd_v, self.sd_w)
         return u.astype(np.float32), y.astype(np.float32)
 
     @property
