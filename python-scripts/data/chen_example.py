@@ -29,7 +29,6 @@ class ChenDataset(DatasetExt):
         self.ntotbatch = ntotbatch
         self.sd_v, self.sd_w = sd_v, sd_w
         self.u, self.y = self._gen_data()
-        self.sd_v, self.sd_w = sd_v, sd_w
 
     def _gen_data(self):
         u = np.zeros((self.ntotbatch, 1, self.seq_len))
