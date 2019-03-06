@@ -19,11 +19,11 @@ def create_silverbox_datasets(seq_len, seq_len_eval=None, train_split=9, shuffle
         is smaller than the total data length, the training data will
         be further divided in batches.
     seq_len_eval: int (optional)
-        Maximum lenght for a batch on the validatiteston and  set. If `seq_len`
-        is smaller than the total data length, the training data will
+        Maximum length for a batch on the validation and test set. If `seq_len_eval`
+        is smaller than the total data length, the validation and test data will
         be further divided in batches
     train_split: int (optional)
-        Number of multisine realizations on the test set. Should be a number
+        Number of multisine realizations on the training set. Should be a number
         between 1 and 9. Default is 9.
     shuffle_seed: {int, None}
         Seed used to shuffle the data between train and validation. If None, there is
