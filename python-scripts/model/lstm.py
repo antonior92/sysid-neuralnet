@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .utils import DynamicModule
+from .base import DynamicModule
 
 
 class LSTM(DynamicModule):
@@ -9,11 +9,10 @@ class LSTM(DynamicModule):
         self.lstm = nn.LSTM(num_inputs, hidden_size)
 
         self.decoding_layers = nn.Conv1d(hidden_size, num_outputs, 1)
-        self.receptive_field = 1
         self.has_internal_state = True
 
-    def set_mode(self, mode):
-        self.mode = mode
+    def requested_input(self, requested_output):
+        return requested_output
 
     def init_hidden(self, batch_size):
         return (torch.zeros(1, batch_size, self.lstm.hidden_size),

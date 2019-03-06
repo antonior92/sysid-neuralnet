@@ -22,27 +22,17 @@
 
 import torch.nn as nn
 from torch.nn.utils import weight_norm
-from .utils import RunMode, DynamicModule
+from .base import CausalConv, CausalConvNet
 
 
-class TemporalBlock(DynamicModule):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, dropout=0.2):
+class TemporalBlock(CausalConvNet):
+    def __init__(self, n_inputs, n_outputs, kernel_size, dilation, dropout=0.2, mode='dilation'):
         super(TemporalBlock, self).__init__()
-        # The padding of one conv and the receptive field of the entire module
-        self.padding = (kernel_size - 1) * dilation
-        self.receptive_field = 2 * self.padding + 1
-        self.requested_output = None
-        self.has_internal_state = False
-
-        self.pad1 = nn.ConstantPad1d((self.padding, 0), 0)
-        self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
-                                           stride=stride, padding=0, dilation=dilation))
+        self.conv1 = weight_norm(CausalConv(n_inputs, n_outputs, kernel_size, subsampl=dilation, mode=mode))
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
 
-        self.pad2 = nn.ConstantPad1d((self.padding, 0), 0)
-        self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size,
-                                           stride=stride, padding=0, dilation=dilation))
+        self.conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation, mode=mode))
         self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout)
 
@@ -51,37 +41,19 @@ class TemporalBlock(DynamicModule):
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
 
-    def forward(self, x):
-        res = x if self.downsample is None else self.downsample(x)
-
-        if self.mode == RunMode.FREE_RUN_SIMULATION:
-            # Calculate needed padding size
-            seq_len1 = x.size()[-1]
-            req_input1 = min(seq_len1, self.requested_output + self.padding) + self.padding
-            padding1 = req_input1 - seq_len1
-            self.pad1.padding = (padding1, 0)
-            assert(padding1 >= 0)
-
-            seq_len2 = seq_len1 + padding1 - self.padding
-            req_input2 = min(seq_len2, self.requested_output) + self.padding
-            padding2 = req_input2 - seq_len2
-            self.pad2.padding = (padding2, 0)
-            assert (padding2 >= 0)
-
-            res = res[..., -self.requested_output:]
-
-        out = self.net(x)
-
-        return self.relu(out + res)
+        self.dynamic_module_list = [self.conv1, self.conv2]  # Important! Look at CausalConvNet to see why
 
     def set_mode(self, mode):
-        self.mode = mode
-        if mode == RunMode.ONE_STEP_AHEAD:
-            self.pad1.padding = (self.padding, 0)
-            self.pad2.padding = (self.padding, 0)
+        self.conv1.mode = mode
+        self.conv2.mode = mode
+
+    def forward(self, x):
+        res = x if self.downsample is None else self.downsample(x)
+        out = self.net(x)
+        return self.relu(out + res)
 
 
-class TCN(DynamicModule):
+class TCN(CausalConvNet):
     def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2):
         super(TCN, self).__init__()
         layers = []
@@ -92,23 +64,13 @@ class TCN(DynamicModule):
             dilation_size = dilation_sizes[i]
             in_channels = num_inputs if i == 0 else n_channels[i-1]
             out_channels = n_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, ksize, stride=1,
+            layers += [TemporalBlock(in_channels, out_channels, ksize,
                                      dilation=dilation_size, dropout=dropout)]
         self.network = nn.Sequential(*layers)
         self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
 
-        requested_output = 1
-        for temporal_module in reversed(self.network):
-            temporal_module.requested_output = requested_output
-            requested_output += temporal_module.receptive_field - 1
-        self.receptive_field = requested_output
-        self.has_internal_state = False
+        self.dynamic_module_list = layers  # Important! Look at CausalConvNet to see why
 
     def forward(self, x):
         y = self.network(x)
         return self.final_conv(y)
-
-    def set_mode(self, mode):
-        self.mode = mode
-        for temporal_module in self.network:
-            temporal_module.set_mode(mode)

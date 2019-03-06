@@ -1,43 +1,33 @@
 import torch.nn as nn
-from .utils import RunMode, DynamicModule
+from .base import CausalConv, CausalConvNet
 from collections import OrderedDict
 
 
-class MLP(DynamicModule):
+class MLP(CausalConvNet):
     """Shallow 2-layer neural network with sigmoidal activation function."""
     def __init__(self, num_inputs, num_outputs, hidden_size, max_past_input, activation_fn):
         super(MLP, self).__init__()
-        self.receptive_field = max_past_input
-        self.has_internal_state = False
 
-        self.pad = nn.ConstantPad1d((self.receptive_field - 1, 0), 0)
-
-        conv1 = nn.Conv1d(num_inputs, hidden_size, kernel_size=max_past_input, padding=0)
+        self.conv1 = CausalConv(num_inputs, hidden_size, max_past_input)
 
         if activation_fn == "sigmoid":
-            fn = nn.Sigmoid()
+            self.fn = nn.Sigmoid()
         elif activation_fn == "relu":
-            fn = nn.ReLU()
+            self.fn = nn.ReLU()
         elif activation_fn == "elu":
-            fn = nn.ELU()
+            self.fn = nn.ELU()
         else:
-            raise Exception("Activation function not implemented: "+ activation_fn)
-        conv2 = nn.Conv1d(hidden_size, num_outputs, 1)
+            raise Exception("Activation function not implemented: " + activation_fn)
+
+        self.conv2 = nn.Conv1d(hidden_size, num_outputs, 1)
 
         # Due to backward compatibility the modules are named as follows
-        self.net = nn.Sequential(OrderedDict([("0", conv1),
-                                              ("2", fn),
-                                              ("3", conv2)]))
+        self.net = nn.Sequential(OrderedDict([("0", self.conv1),
+                                              ("2", self.fn),
+                                              ("3", self.conv2)]))
 
-    def set_mode(self, mode):
-        self.mode = mode
-        if mode == RunMode.ONE_STEP_AHEAD:
-            self.pad.padding = (self.receptive_field - 1, 0)
+        self.dynamic_module_list = [self.conv1, self.conv2]  # Important! Look at CausalConvNet to see why
 
     def forward(self, x):
-        if self.mode == RunMode.FREE_RUN_SIMULATION:
-            seq_len = x.size()[-1]
-            padding = max(self.receptive_field - seq_len, 0)
-            self.pad.padding = (padding, 0)
         x = self.pad(x)
         return self.net(x)

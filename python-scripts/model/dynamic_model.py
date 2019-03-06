@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import MLP, TCN, LSTM
-from model.utils import RunMode
+from .base import RunMode, CausalConvNet
 
 
 class DynamicModel(nn.Module):
@@ -28,15 +28,20 @@ class DynamicModel(nn.Module):
             self.m = LSTM(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
         else:
             raise Exception("Unimplemented model")
-        self.mode = self.m.mode
 
     @property
     def num_model_inputs(self):
         return self.num_inputs + self.num_outputs if self.ar else self.num_inputs
 
     def set_mode(self, mode):
-        self.mode = mode
-        self.m.set_mode(mode)
+        if mode == RunMode.ONE_STEP_AHEAD:
+            self.m.requested_output = 'same'
+            if isinstance(self.m, CausalConvNet):
+                self.m.set_mode('dilation')
+        elif mode == RunMode.FREE_RUN_SIMULATION:
+            self.m.requested_output = 1
+            if isinstance(self.m, CausalConvNet):
+                self.m.set_mode('stride')
 
     def one_step_ahead(self, u, y):
         num_batches, _, _ = u.size()
@@ -57,7 +62,7 @@ class DynamicModel(nn.Module):
 
     def free_run_simulation(self, u, y):
         if self.ar:
-            rf = self.m.receptive_field
+            rf = self.m.requested_input(requested_output=1)
             num_batches, _, seq_len = u.size()
             y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1, device=u.device)
 
