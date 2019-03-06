@@ -9,22 +9,22 @@ import numpy.random as rd
 from data.base import IODataset
 
 
-def create_silverbox_datasets(seq_len, seq_len_eval=None, train_split=9, shuffle_seed=None):
+def create_silverbox_datasets(seq_len_train=None, seq_len_val=None, seq_len_test=None,
+                              train_split=None, shuffle_seed=None):
     """Load silverbox data: train, validation and test datasets.
 
     Parameters
     ----------
-    seq_len: int
+    seq_len_train, seq_len_val, seq_len_test: int (optional)
         Maximum lenght for a batch on the training set. If `seq_len`
-        is smaller than the total data length, the training data will
-        be further divided in batches.
-    seq_len_eval: int (optional)
-        Maximum length for a batch on the validation and test set. If `seq_len_eval`
-        is smaller than the total data length, the validation and test data will
-        be further divided in batches
-    train_split: int (optional)
-        Number of multisine realizations on the training set. Should be a number
-        between 1 and 9. Default is 9.
+        is smaller than the total data length, the data will
+        be further divided in batches. If None, put the entire dataset on
+        a single batch.
+    train_split: {None, int} (optional)
+        Number of multisine realizations on the test set. Should be a number
+        between 1 and 9. If `None` do not split the dataset and use all multisine
+        realizations both for training and validation. Since there is very little
+        noise on the data this make sense. By default it is None.
     shuffle_seed: {int, None}
         Seed used to shuffle the data between train and validation. If None, there is
         no shuffle at all.
@@ -51,22 +51,24 @@ def create_silverbox_datasets(seq_len, seq_len_eval=None, train_split=9, shuffle
     n_trans_after = 40  # Number of transient samples after each multisine realization
     n_block = n_trans_before + n + n_trans_after
     n_multisine = 10  # Number of multisine realizations
-
+    r_train = train_split if train_split is not None else n_multisine
+    r_val = n_multisine - train_split if train_split is not None else n_multisine
 
     count = range(n_multisine)
     count = rd.permutation(count) if shuffle_seed is not None else count
-
     # Extract training data
-    u_train = np.zeros(train_split * n)
-    y_train = np.zeros(train_split * n)
-    for i, r in enumerate(count[:train_split]):
+    u_train = np.zeros(r_train * n)
+    y_train = np.zeros(r_train * n)
+    count_train = count[:train_split] if train_split is not None else count
+    for i, r in enumerate(count_train):
         u_train[i * n + np.arange(n)] = u[n_zeros + n_test + r * n_block + n_trans_before + np.arange(n)]
         y_train[i * n + np.arange(n)] = y[n_zeros + n_test + r * n_block + n_trans_before + np.arange(n)]
 
     # Extract validation data
-    u_val = np.zeros((n_multisine - train_split) * n)
-    y_val = np.zeros((n_multisine - train_split) * n)
-    for i, r in enumerate(count[train_split:]):
+    u_val = np.zeros(r_val * n)
+    y_val = np.zeros(r_val * n)
+    count_val = count[train_split:] if train_split is not None else count
+    for i, r in enumerate(count_val):
         u_val[i * n + np.arange(n)] = u[n_zeros + n_test + r * n_block + n_trans_before + np.arange(n)]
         y_val[i * n + np.arange(n)] = y[n_zeros + n_test + r * n_block + n_trans_before + np.arange(n)]
 
@@ -74,9 +76,9 @@ def create_silverbox_datasets(seq_len, seq_len_eval=None, train_split=9, shuffle
     u_test = u[n_zeros:n_zeros + n_test]
     y_test = y[n_zeros:n_zeros + n_test]
 
-    dataset_train = IODataset(u_train, y_train, seq_len)
-    dataset_val = IODataset(u_val, y_val, seq_len_eval)
-    dataset_test = IODataset(u_test, y_test, seq_len_eval)
+    dataset_train = IODataset(u_train, y_train, seq_len_train)
+    dataset_val = IODataset(u_val, y_val, seq_len_val)
+    dataset_test = IODataset(u_test, y_test, seq_len_test)
 
     return dataset_train, dataset_val, dataset_test
 
@@ -111,7 +113,7 @@ def maybe_download_and_extract():
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # For testing purposes, should be removed afterwards
-    train, val, test = create_silverbox_datasets(seq_len=1000, seq_len_eval=1000, train_split=5, shuffle_seed=2)
+    train, val, test = create_silverbox_datasets()
     # Convert back from torch tensor to numpy vector
     u_train = train.u.reshape(-1)
     y_train = train.y.reshape(-1)

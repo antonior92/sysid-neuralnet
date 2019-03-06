@@ -56,10 +56,11 @@ default_options_chen = {
     }
 }
 
-default_options_silverbox = {'seq_len': 2048,
-                             'seq_len_eval': 2048,
-                             'train_split': 9,
-                             'shuffle_seed': 1}
+default_options_silverbox = {'seq_len_train': 2048,
+                             'seq_len_val': 2048,
+                             'seq_len_test': None,
+                             'train_split': None,
+                             'shuffle_seed': None}
 
 default_options_train = {
         'init_lr': 0.001,
