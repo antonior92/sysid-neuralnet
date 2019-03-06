@@ -13,19 +13,37 @@ mlp_max_past_input_list = [2**i for i in range(7)]
 mlp_hidden_size_list = [4*2**i for i in range(7)]
 io_delay_list = [0, 1, 2, 3]
 
+tcn_layer1 = [4*2**i for i in range(4)]
+tcn_layer2 = [4*2**i for i in range(4)]
+tcn_layer3 = [4*2**i for i in range(4)]
+
+tcn_layer2 += [None]
+tcn_layer3 += [None]
+
+
 seqlen_list = [32*2**i for i in range(6)]
 batchsize_list = [8*2**i for i in range(6)]
 lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
-for max_past_input in mlp_max_past_input_list:
-    for hidden_size in mlp_hidden_size_list:
-        option_dicts.append({"logdir": "log/mlp_with_normalization_4", "cuda": True,
-                             "dataset": "silverbox", "model": "mlp",
-                             "normalize": True, "normalize_n_std": 1,
-                             "model_options": {"max_past_input": max_past_input, "hidden_size": hidden_size,
-                                               "activation_fn": "elu"}
-                             }
-                            )
+for layer1 in tcn_layer1:
+    for layer2 in tcn_layer2:
+        for layer3 in tcn_layer3:
+            n_channels = [layer1]
+            if layer2 is None:
+                if layer3 is not None:
+                    continue
+            else:
+                n_channels += [layer2]
+
+            if layer3 is not None:
+                n_channels += [layer3]
+
+            option_dicts.append({"logdir": "log/tcn_1", "cuda": True,
+                                 "dataset": "silverbox", "model": "tcn",
+                                 "normalize": True, "normalize_n_std": 1,
+                                 "model_options": {"n_channels": n_channels}
+                                 }
+                                )
 
 
 num_processes = 8
