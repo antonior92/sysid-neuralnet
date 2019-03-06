@@ -43,10 +43,6 @@ class TemporalBlock(CausalConvNet):
 
         self.dynamic_module_list = [self.conv1, self.conv2]  # Important! Look at CausalConvNet to see why
 
-    def set_mode(self, mode):
-        self.conv1.mode = mode
-        self.conv2.mode = mode
-
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
         out = self.net(x)
