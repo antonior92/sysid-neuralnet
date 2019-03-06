@@ -16,15 +16,17 @@ def create_silverbox_datasets(seq_len_train=None, seq_len_val=None, seq_len_test
     Parameters
     ----------
     seq_len_train, seq_len_val, seq_len_test: int (optional)
-        Maximum lenght for a batch on the training set. If `seq_len`
-        is smaller than the total data length, the data will
-        be further divided in batches. If None, put the entire dataset on
-        a single batch.
+        Maximum length for a batch on, respectively, the training,
+        validation and test sets. If `seq_len` is smaller than the total
+        data length, the data will be further divided in batches. If None,
+        put the entire dataset on a single batch.
     train_split: {None, int} (optional)
-        Number of multisine realizations on the test set. Should be a number
-        between 1 and 9. If `None` do not split the dataset and use all multisine
-        realizations both for training and validation. Since there is very little
-        noise on the data this make sense. By default it is None.
+        Number of multisine realizations on the training set. Should be a number
+        between 1 and 9. The remaining realizations `(10 - train_split)` will
+        be used for validation. If `None` do not split the dataset and use all
+        multisine realizations both for training and validation. Since there is
+        very little noise on the data this is a reasonable choice and is used
+        by default.
     shuffle_seed: {int, None}
         Seed used to shuffle the data between train and validation. If None, there is
         no shuffle at all.
