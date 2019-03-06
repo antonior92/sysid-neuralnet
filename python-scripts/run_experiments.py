@@ -41,6 +41,7 @@ for layer1 in tcn_layer1:
             option_dicts.append({"logdir": "log/tcn_1", "cuda": True,
                                  "dataset": "silverbox", "model": "tcn",
                                  "normalize": True, "normalize_n_std": 1,
+                                 "train_options":{'lr_scheduler_factor': 1e5},
                                  "model_options": {"n_channels": n_channels}
                                  }
                                 )
