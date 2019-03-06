@@ -26,13 +26,13 @@ from .base import CausalConv, CausalConvNet
 
 
 class TemporalBlock(CausalConvNet):
-    def __init__(self, n_inputs, n_outputs, kernel_size, dilation, dropout=0.2, mode='dilation'):
+    def __init__(self, n_inputs, n_outputs, kernel_size, dilation, dropout=0.2):
         super(TemporalBlock, self).__init__()
-        self.conv1 = weight_norm(CausalConv(n_inputs, n_outputs, kernel_size, subsampl=dilation, mode=mode))
+        self.conv1 = weight_norm(CausalConv(n_inputs, n_outputs, kernel_size, subsampl=dilation))
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
 
-        self.conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation, mode=mode))
+        self.conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation))
         self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout)
 
