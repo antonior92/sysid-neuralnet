@@ -7,45 +7,35 @@ def sub_run(dict):
     options = run.create_full_options_dict(dict)
     run.run(options, mode_interactive=False)
 
-
+io_delay = 1
 option_dicts = []
-mlp_max_past_input_list = [i for i in range(10)]
-mlp_hidden_size_list = [4*2**i for i in range(7)]
-io_delay_list = [0, 1, 2]
-for io_delay in io_delay_list:
-    for max_past_input in mlp_max_past_input_list:
-        for hidden_size in mlp_hidden_size_list:
-            option_dicts.append({"logdir": "log/chen_example/mlp_networks_1", "cuda": True,
-                                 "dataset": "chen",
-                                 "model": "mlp",
-                                 "model_options": {"max_past_input": max_past_input,
-                                                   "hidden_size": hidden_size,
-                                                   "io_delay": io_delay},
-                                "dataset_options": {'train': {'sd_v': 0,
-                                                              'sd_w': 0},
-                                                    'valid': {'sd_v': 0,
-                                                              'sd_w': 0},
-                                                    'test': {'sd_v': 0,
-                                                             'sd_w': 0}}}
-                                )
+channels_list = [16, 32, 64]
+n_blocks_list = [1, 2, 4]
+ksize_list = [2, 4, 8]
+dropout_list = [0, 0.3, 0.8]
+for noise_levels in [(0, 0), (0.1, 0.5), (0.8, 0.8)]:
+    for n_blocks in n_blocks_list:
+        for channels in channels_list:
+            n_channels = n_blocks*[channels]
+            dilation_sizes = n_blocks*[]
+            for ksize in ksize_list:
+                for dropout in dropout_list:
+                    option_dicts.append({"logdir": "log/chen_example/tcn", "cuda": True,
+                                         "dataset": "chen",
+                                         "model": "tcn",
+                                         "model_options": {"ksize": ksize,
+                                                           "n_channels": n_channels,
+                                                           "dilation_size": dilation_sizes,
+                                                           "dropout": dropout
+                                                           },
+                                        "dataset_options": {'train': {'sd_v': noise_levels[0],
+                                                                      'sd_w': noise_levels[1]},
+                                                            'valid': {'sd_v': noise_levels[0],
+                                                                      'sd_w': noise_levels[1]},
+                                                            'test': {'sd_v': noise_levels[0],
+                                                                     'sd_w': noise_levels[1]}}}
+                                        )
 
-
-for io_delay in io_delay_list:
-    for max_past_input in mlp_max_past_input_list:
-        for hidden_size in mlp_hidden_size_list:
-            option_dicts.append({"logdir": "log/chen_example/mlp_networks_1", "cuda": True,
-                                 "dataset": "chen",
-                                 "model": "mlp",
-                                 "model_options": {"max_past_input": max_past_input,
-                                                   "hidden_size": hidden_size,
-                                                   "io_delay": io_delay},
-                                "dataset_options": {'train': {'sd_v': 0.8,
-                                                              'sd_w': 0.8},
-                                                    'valid': {'sd_v': 0.8,
-                                                              'sd_w': 0.8},
-                                                    'test': {'sd_v': 0.8,
-                                                             'sd_w': 0.8}}}
-                                )
 
 
 num_processes = 8
