@@ -65,13 +65,19 @@ results = pd.concat(df, sort=False)
 # Get models that fail
 failed_executions = results[np.isnan(results.vloss)]
 
+# Replace NaNs
+results.fillna({'train_sd_v': 0.1, 'train_sd_w': 0.5,
+                'val_sd_v': 0.1, 'val_sd_w': 0.5,
+                'test_sd_v': 0.1, 'test_sd_w': 0.5},
+               inplace=True)
 
 # Filter results
 results = results[results['model_options_io_delay'] == 1]
 
+
 # Plot example
 fig, ax = plt.subplots()
 ax = sns.lineplot(hue='model_options_hidden_size', y='vloss', x='model_options_max_past_input',
-                   data=results, legend='full')
+                  style='train_sd_v', data=results, legend='full')
 plt.legend(bbox_to_anchor=(1.1, 1.05))
 show_fig(fig)
