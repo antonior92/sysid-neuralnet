@@ -29,5 +29,4 @@ class MLP(CausalConvNet):
         self.set_causal_conv_list([self.conv1])
 
     def forward(self, x):
-        x = self.pad(x)
         return self.net(x)

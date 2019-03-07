@@ -60,6 +60,8 @@ class CausalConv(DynamicModule):
             self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
                                   groups=groups, bias=bias)
         self.requested_output = None
+        self.weight = self.conv.weight
+        self.bias = self.conv.bias
 
     def set_requested_output(self, requested_output):
         self.requested_output = requested_output
@@ -75,12 +77,12 @@ class CausalConv(DynamicModule):
             self.conv.dilation = 1
 
     def get_requested_input(self, requested_output='internal'):
+        if requested_output == 'internal':
+            requested_output = self.requested_output
         if requested_output is None:
             return None
         if requested_output == 'same':
             return 'same'
-        if requested_output == 'internal':
-            requested_output = self.requested_output
         if self.mode == 'stride':
             requested_output = self.subsampl * (requested_output-1) + 1
         return requested_output + (self.kernel_size - 1) * self.subsampl
@@ -129,7 +131,7 @@ class CausalConvNet(DynamicModule):
     def get_requested_input(self, requested_output='internal'):
         requested = requested_output
         for causal_conv in reversed(self.causal_conv_list):
-            requested = causal_conv.requested_output(requested)
+            requested = causal_conv.get_requested_input(requested)
         return requested
 
     def get_requested_output(self):
@@ -138,8 +140,8 @@ class CausalConvNet(DynamicModule):
     def set_requested_output(self, requested_output):
         requested = requested_output
         for causal_conv in reversed(self.causal_conv_list):
-            causal_conv.requested_output = requested
-            requested = causal_conv.requested_input(requested)
+            causal_conv.set_requested_output(requested)
+            requested = causal_conv.get_requested_input()
 
     def set_mode(self, mode):
         for causal_conv in reversed(self.causal_conv_list):

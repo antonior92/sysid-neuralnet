@@ -41,7 +41,7 @@ class TemporalBlock(CausalConvNet):
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
 
-        self.self.set_causal_conv_list([self.conv1, self.conv2])
+        self.set_causal_conv_list([self.conv1, self.conv2])
 
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
@@ -55,7 +55,7 @@ class TCN(CausalConvNet):
         layers = []
         num_levels = len(n_channels)
         if dilation_sizes is None:
-            dilation_sizes = [2 ** i for i in reversed(range(num_levels))]
+            dilation_sizes = [2 ** i for i in range(num_levels)]
         for i in range(num_levels):
             dilation_size = dilation_sizes[i]
             in_channels = num_inputs if i == 0 else n_channels[i-1]

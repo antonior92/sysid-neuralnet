@@ -28,20 +28,24 @@ class DynamicModel(nn.Module):
             self.m = LSTM(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
         else:
             raise Exception("Unimplemented model")
+        self.mode = RunMode.ONE_STEP_AHEAD
 
     @property
     def num_model_inputs(self):
         return self.num_inputs + self.num_outputs if self.ar else self.num_inputs
 
     def set_mode(self, mode):
-        if mode == RunMode.ONE_STEP_AHEAD:
-            self.m.requested_output = 'same'
+        self.mode = mode
+        if mode == 'one-step-ahead':
+            self.m.set_requested_output('same')
             if isinstance(self.m, CausalConvNet):
                 self.m.set_mode('dilation')
-        elif mode == RunMode.FREE_RUN_SIMULATION:
-            self.m.requested_output = 1
+        elif mode == 'free-run-simulation':
+            self.m.set_requested_output(1)
             if isinstance(self.m, CausalConvNet):
                 self.m.set_mode('stride')
+        else:
+            raise AttributeError('Unknown mode {}'.format(mode))
 
     def one_step_ahead(self, u, y):
         num_batches, _, _ = u.size()

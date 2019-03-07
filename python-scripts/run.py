@@ -7,7 +7,7 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
-from model.utils import Normalizer1D
+from model.base import Normalizer1D
 import torch
 import numpy as np
 
@@ -101,7 +101,7 @@ default_options = {
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
-    'model': 'mlp',
+    'model': 'tcn',
     'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
