@@ -17,7 +17,7 @@ for noise_levels in [(0, 0), (0.1, 0.5), (0.8, 0.8)]:
     for n_blocks in n_blocks_list:
         for channels in channels_list:
             n_channels = n_blocks*[channels]
-            dilation_sizes = n_blocks*[]
+            dilation_sizes = n_blocks*[1]
             for ksize in ksize_list:
                 for dropout in dropout_list:
                     option_dicts.append({"logdir": "log/chen_example/tcn", "cuda": True,
