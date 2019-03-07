@@ -13,7 +13,7 @@ class Normalizer1D(nn.Module):
 
     def __init__(self, scale, offset):
         super(Normalizer1D, self).__init__()
-        self.register_buffer('scale', torch.tensor(scale + self._epsilon, dtype=torch.float32))
+        self.register_buffer('scale', torch.tensor(scale, dtype=torch.float32) + self._epsilon)
         self.register_buffer('offset', torch.tensor(offset, dtype=torch.float32))
 
     def normalize(self, x):
@@ -47,6 +47,7 @@ class DynamicModule(nn.Module):
 class CausalConv(DynamicModule):
     def __init__(self, in_channels, out_channels, kernel_size,
                  subsampl=1, bias=True, groups=1, mode='dilation'):
+        super(CausalConv, self).__init__()
         self.kernel_size = kernel_size
         self.subsampl = subsampl
         self.mode = mode
@@ -58,7 +59,7 @@ class CausalConv(DynamicModule):
         elif mode == 'stride':
             self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
                                   stride=subsampl, groups=groups, bias=bias)
-        self.requested_output = 'same'
+        self.requested_output = None
 
     def set_mode(self, mode):
         self.mode = mode
@@ -69,20 +70,31 @@ class CausalConv(DynamicModule):
             self.conv.stride = self.subsampl
             self.conv.dilation = 1
 
-    def requested_input(self, requested_output):
+    def set_requested_output(self, requested_output):
+        self.requested_output = requested_output
+
+    def get_requested_output(self):
+        return self.requested_output
+
+    def get_requested_input(self, requested_output='internal'):
+        if requested_output is None:
+            return None
         if requested_output == 'same':
             return 'same'
+        if requested_output == 'internal':
+            requested_output = self.requested_output
         if self.mode == 'stride':
             requested_output = self.subsampl*requested_output
         return requested_output + (self.kernel_size - 1) * self.subsampl
 
     def forward(self, x):
         seq_len = x.size()[-1]
-        requested_output = self.requested_output if self.requested_output != 'same' else seq_len
-        requested_input = self.requested_input(requested_output)
-        padding = min(requested_input - seq_len, 0)
-        self.pad.padding = (padding, 0)
-        x = self.pad(x)
+        if self.requested_output is not None:
+            requested_output = self.requested_output if self.requested_output != 'same' else seq_len
+            requested_input = self.get_requested_input(requested_output)
+            padding = max(requested_input - seq_len, 0)
+            self.pad.padding = (padding, 0)
+            x = self.pad(x)
         return self.conv(x)
 
 
