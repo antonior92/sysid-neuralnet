@@ -25,7 +25,7 @@ for noise_levels in [(0, 0), (0.1, 0.5), (0.8, 0.8)]:
                                          "model": "tcn",
                                          "model_options": {"ksize": ksize,
                                                            "n_channels": n_channels,
-                                                           "dilation_size": dilation_sizes,
+                                                           "dilation_sizes": dilation_sizes,
                                                            "dropout": dropout
                                                            },
                                         "dataset_options": {'train': {'sd_v': noise_levels[0],
