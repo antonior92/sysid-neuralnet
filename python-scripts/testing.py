@@ -4,7 +4,6 @@ import run
 import numpy as np
 import matplotlib.pyplot as plt
 import data.loader as loader
-from model.utils import RunMode
 
 
 plotly = True
@@ -18,13 +17,13 @@ def show_fig(fig):
         plt.show()
 
 (model, _, options) = run.run({"cuda": False},
-                              load_model="log/train_Wed Feb 27 14:54:48 2019/best_model.pt")
+                              load_model="log/train_Thu Mar  7 19:57:07 2019/best_model.pt")
 
 model.cpu()
-model.set_mode(RunMode.FREE_RUN_SIMULATION)
+model.set_mode('free-run-simulation')
 model.eval()
 
-loaders = loader.load_dataset("silverbox", {'seq_len': 1000, 'seq_len_eval': None}, 10, 10)
+loaders = loader.load_dataset("silverbox", {'seq_len_train': 1000}, 10, 10)
 
 all_output = []
 all_y = []
