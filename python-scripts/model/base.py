@@ -30,10 +30,9 @@ class Normalizer1D(nn.Module):
 class DynamicModule(nn.Module):
     def __init__(self):
         super(DynamicModule, self).__init__()
-        self.requested_output = None
         self.has_internal_state = False
 
-    def requested_input(self, requested_output):
+    def get_requested_input(self, requested_output='internal'):
         raise NotImplementedError
 
     def forward(self, *input):
@@ -58,23 +57,21 @@ class CausalConv(DynamicModule):
                                   dilation=subsampl, groups=groups, bias=bias)
         elif mode == 'stride':
             self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
-                                  stride=subsampl, groups=groups, bias=bias)
+                                  groups=groups, bias=bias)
         self.requested_output = None
-
-    def set_mode(self, mode):
-        self.mode = mode
-        if mode == 'dilation':
-            self.conv.dilation = self.subsampl
-            self.conv.stride = 1
-        elif mode == 'stride':
-            self.conv.stride = self.subsampl
-            self.conv.dilation = 1
 
     def set_requested_output(self, requested_output):
         self.requested_output = requested_output
 
     def get_requested_output(self):
         return self.requested_output
+
+    def set_mode(self, mode):
+        self.mode = mode
+        if mode == 'dilation':
+            self.conv.dilation = self.subsampl
+        else:
+            self.conv.dilation = 1
 
     def get_requested_input(self, requested_output='internal'):
         if requested_output is None:
@@ -84,7 +81,7 @@ class CausalConv(DynamicModule):
         if requested_output == 'internal':
             requested_output = self.requested_output
         if self.mode == 'stride':
-            requested_output = self.subsampl*requested_output
+            requested_output = self.subsampl * (requested_output-1) + 1
         return requested_output + (self.kernel_size - 1) * self.subsampl
 
     def forward(self, x):
@@ -95,6 +92,8 @@ class CausalConv(DynamicModule):
             padding = max(requested_input - seq_len, 0)
             self.pad.padding = (padding, 0)
             x = self.pad(x)
+        if self.mode == 'stride':
+            x = x[:, :, (seq_len-1)%self.subsampl::self.subsampl]
         return self.conv(x)
 
 
@@ -103,18 +102,19 @@ class CausalConvNet(DynamicModule):
         super(CausalConvNet, self).__init__()
         self.dynamic_module_list = None
 
-    def requested_input(self, requested_output):
+    def set_dynamic_module_list(self, l):
+        self.dynamic_module_list = l
+
+    def get_requested_input(self, requested_output='internal'):
         requested = requested_output
         for temporal_module in reversed(self.dynamic_module_list):
             requested = temporal_module.requested_output(requested)
         return requested
 
-    @property
-    def requested_output(self):
+    def get_requested_output(self):
         return self.dynamic_module_list[-1].requested_output
 
-    @requested_output.setter
-    def requested_output(self, requested_output):
+    def set_requested_output(self, requested_output):
         requested = requested_output
         for temporal_module in reversed(self.dynamic_module_list):
             temporal_module.requested_output = requested
@@ -128,15 +128,3 @@ class CausalConvNet(DynamicModule):
     def forward(self, *input):
         raise NotImplementedError
 
-
-def copy_module_params(src, dest):
-    for name, param in src.named_parameters():
-        attrib = dest
-        modules = name.split('.')
-        try:
-            for i in range(len(modules) - 1):
-                attrib = getattr(attrib, modules[i])
-            setattr(attrib, modules[-1], param)
-        except:
-            pass
-    return dest
