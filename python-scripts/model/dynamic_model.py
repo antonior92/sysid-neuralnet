@@ -77,8 +77,8 @@ class DynamicModel(nn.Module):
 
             for i in range(seq_len):
                 if i < rf:
-                    y_in = y_sim[:, :, :i+1]
-                    u_in = u_delayed[:, :, :i+1]
+                    y_in = F.pad(y_sim[:, :, :i+1], [rf-i, 0])
+                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i, 0])
                 else:
                     y_in = y_sim[:, :, i-rf+1:i+1]
                     u_in = u_delayed[:, :, i-rf+1:i+1]

@@ -46,6 +46,8 @@ class TemporalBlock(CausalConvNet):
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
         out = self.net(x)
+        if res.size()[2] != out.size()[2]:
+            res = res[:, :, -out.size()[2]:]
         return self.relu(out + res)
 
 
