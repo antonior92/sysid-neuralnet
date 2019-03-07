@@ -26,7 +26,7 @@ class MLP(CausalConvNet):
                                               ("2", self.fn),
                                               ("3", self.conv2)]))
 
-        self.dynamic_module_list = [self.conv1, self.conv2]  # Important! Look at CausalConvNet to see why
+        self.set_causal_conv_list([self.conv1])
 
     def forward(self, x):
         x = self.pad(x)

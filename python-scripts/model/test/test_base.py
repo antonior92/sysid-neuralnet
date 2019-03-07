@@ -3,7 +3,7 @@ import numpy as np
 import torch as torch
 import torch.nn as nn
 import model.base as base
-from numpy.testing import assert_allclose, assert_equal
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 
 class TestNormalizer1D(unittest.TestCase):
@@ -74,6 +74,7 @@ class TestCausalConv(unittest.TestCase):
             for kernel_size in [1, 2, 3, 4, 5, 6]:
                 conv = base.CausalConv(in_dim, out_shape[1], kernel_size)
                 conv.set_requested_output(None)
+                conv.set_mode('dilation')
                 input_len = conv.get_requested_input(out_shape[2])
                 x = torch.ones((out_shape[0], in_dim, input_len))
                 y = conv(x)
@@ -134,7 +135,7 @@ class TestCausalConv(unittest.TestCase):
                 conv = base.CausalConv(in_dim, out_dim, kernel_size, subsampl=subsampl)
                 conv.set_mode('stride')
                 for in_length in range(1, 20, 2):
-                    start_len = max(int(np.ceil(in_length/subsampl)) - kernel_size+1, 1)
+                    start_len = max((in_length-1)//subsampl - kernel_size +2 , 1)
                     for out_length in range(start_len, 20, 2):
                         conv.set_requested_output(out_length)
                         x = torch.ones((n_batches, in_dim, in_length))
@@ -166,3 +167,48 @@ class TestCausalConv(unittest.TestCase):
                     y_strides = conv(x)
                     assert_allclose(y_dilation[:, :, (in_length-1)%subsampl::subsampl].detach(), y_strides.detach(),
                                     atol=1e-5)
+
+
+class TestCausalConvNet(unittest.TestCase):
+
+    def test_mismatched_subsampling(self):
+        conv1 = base.CausalConv(1, 4, 3, subsampl=1)
+        conv2 = base.CausalConv(1, 4, 3, subsampl=2)
+        conv3 = base.CausalConv(1, 4, 3, subsampl=3)
+        net = base.CausalConvNet()
+        assert_raises(AttributeError, net.set_causal_conv_list, [conv1, conv2, conv3])
+
+    def test_nested_convs(self):
+        conv1 = base.CausalConv(1, 4, 3, subsampl=1)
+        conv2 = base.CausalConv(1, 4, 3, subsampl=2)
+        conv3 = base.CausalConv(1, 4, 3, subsampl=4)
+        conv4 = base.CausalConv(1, 4, 3, subsampl=8)
+        conv5 = base.CausalConv(1, 4, 3, subsampl=16)
+        conv6 = base.CausalConv(1, 4, 3, subsampl=32)
+        net1 = base.CausalConvNet()
+        net1.set_causal_conv_list([conv1, conv2])
+        net2 = base.CausalConvNet()
+        net2.set_causal_conv_list([conv4, conv5, conv6])
+
+        net = base.CausalConvNet()
+        net.set_causal_conv_list([net1, conv3, net2])
+
+        assert_equal([c.subsampl for c in net.causal_conv_list], [1, 2, 4, 8, 16, 32])
+
+    def test_set_mode(self):
+        conv1 = base.CausalConv(1, 4, 3, subsampl=1)
+        conv2 = base.CausalConv(1, 4, 3, subsampl=2)
+
+        net = base.CausalConvNet()
+        net.set_causal_conv_list([conv1, conv2])
+
+        net.set_mode('dilation')
+        for c in net.causal_conv_list:
+            assert_equal(c.mode, 'dilation')
+        net.set_mode('stride')
+        for c in net.causal_conv_list:
+            assert_equal(c.mode, 'stride')
+
+
+
+

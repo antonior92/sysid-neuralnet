@@ -36,12 +36,12 @@ class TemporalBlock(CausalConvNet):
         self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout)
 
-        self.net = nn.Sequential(self.pad1, self.conv1, self.relu1, self.dropout1,
-                                 self.pad2, self.conv2, self.relu2, self.dropout2)
+        self.net = nn.Sequential(self.conv1, self.relu1, self.dropout1,
+                                 self.conv2, self.relu2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
 
-        self.dynamic_module_list = [self.conv1, self.conv2]  # Important! Look at CausalConvNet to see why
+        self.self.set_causal_conv_list([self.conv1, self.conv2])
 
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
@@ -65,7 +65,7 @@ class TCN(CausalConvNet):
         self.network = nn.Sequential(*layers)
         self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
 
-        self.dynamic_module_list = layers  # Important! Look at CausalConvNet to see why
+        self.set_causal_conv_list(layers)
 
     def forward(self, x):
         y = self.network(x)

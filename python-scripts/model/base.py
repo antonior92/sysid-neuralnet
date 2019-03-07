@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from enum import Enum
+import numpy as np
 
 
 class RunMode(str, Enum):
@@ -89,26 +90,46 @@ class CausalConv(DynamicModule):
         if self.requested_output is not None:
             requested_output = self.requested_output if self.requested_output != 'same' else seq_len
             requested_input = self.get_requested_input(requested_output)
-            padding = max(requested_input - seq_len, 0)
-            self.pad.padding = (padding, 0)
-            x = self.pad(x)
+            if self.mode == 'dilation':
+                padding = max(requested_input - seq_len, 0)
+                self.pad.padding = (padding, 0)
+            elif self.mode == 'stride':
+                padding = max(int(np.ceil((requested_input - seq_len)/self.subsampl)), 0)
+                self.pad.padding = (padding, 0)
         if self.mode == 'stride':
             x = x[:, :, (seq_len-1)%self.subsampl::self.subsampl]
+        if self.requested_output is not None:
+            x = self.pad(x)
         return self.conv(x)
 
 
 class CausalConvNet(DynamicModule):
     def __init__(self):
         super(CausalConvNet, self).__init__()
-        self.dynamic_module_list = None
+        self.causal_conv_list = []
 
-    def set_dynamic_module_list(self, l):
-        self.dynamic_module_list = l
+    @staticmethod
+    def _set_causal_conv_list(dest, l):
+        for temporal_module in l:
+            if isinstance(temporal_module, CausalConv):
+                dest.append(temporal_module)
+            elif isinstance(temporal_module, CausalConvNet):
+                CausalConvNet._set_causal_conv_list(dest, temporal_module.causal_conv_list)
+
+    def set_causal_conv_list(self, l):
+        self.causal_conv_list = []
+        self._set_causal_conv_list(self.causal_conv_list, l)
+
+        for i in range(len(self.causal_conv_list)-1):
+            subsampl2 = self.causal_conv_list[i + 1].subsampl
+            subsampl1 = self.causal_conv_list[i].subsampl
+            if subsampl2 % subsampl1 != 0:
+                raise AttributeError("Invalid dilations for the causal convolutions.{0} % {1} != 0".format(subsampl2, subsampl1))
 
     def get_requested_input(self, requested_output='internal'):
         requested = requested_output
-        for temporal_module in reversed(self.dynamic_module_list):
-            requested = temporal_module.requested_output(requested)
+        for causal_conv in reversed(self.causal_conv_list):
+            requested = causal_conv.requested_output(requested)
         return requested
 
     def get_requested_output(self):
@@ -116,14 +137,13 @@ class CausalConvNet(DynamicModule):
 
     def set_requested_output(self, requested_output):
         requested = requested_output
-        for temporal_module in reversed(self.dynamic_module_list):
-            temporal_module.requested_output = requested
-            requested = temporal_module.requested_input(requested)
+        for causal_conv in reversed(self.causal_conv_list):
+            causal_conv.requested_output = requested
+            requested = causal_conv.requested_input(requested)
 
     def set_mode(self, mode):
-        for temporal_module in reversed(self.dynamic_module_list):
-            if isinstance(o, (CausalConvNet, CausalConv)):
-                temporal_module.set_mode(mode)
+        for causal_conv in reversed(self.causal_conv_list):
+            causal_conv.set_mode(mode)
 
     def forward(self, *input):
         raise NotImplementedError
