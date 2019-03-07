@@ -66,7 +66,7 @@ class DynamicModel(nn.Module):
 
     def free_run_simulation(self, u, y):
         if self.ar:
-            rf = self.m.requested_input(requested_output=1)
+            rf = self.m.get_requested_input(requested_output=1)
             num_batches, _, seq_len = u.size()
             y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1, device=u.device)
 
