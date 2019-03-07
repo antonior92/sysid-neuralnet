@@ -36,11 +36,11 @@ class DynamicModel(nn.Module):
 
     def set_mode(self, mode):
         self.mode = mode
-        if mode == 'one-step-ahead':
+        if mode == RunMode.ONE_STEP_AHEAD:
             self.m.set_requested_output('same')
             if isinstance(self.m, CausalConvNet):
                 self.m.set_mode('dilation')
-        elif mode == 'free-run-simulation':
+        elif mode == RunMode.FREE_RUN_SIMULATION:
             self.m.set_requested_output(1)
             if isinstance(self.m, CausalConvNet):
                 self.m.set_mode('stride')
