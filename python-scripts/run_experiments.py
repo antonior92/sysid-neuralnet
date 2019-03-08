@@ -8,33 +8,39 @@ def sub_run(dict):
     run.run(options, mode_interactive=False)
 
 io_delay = 1
+ksize_list = 2
+logdir = "log/chen_example/tcn_"
 option_dicts = []
-channels_list = [16, 32, 64]
-n_blocks_list = [1, 2, 4]
-ksize_list = [2, 4, 8]
-dropout_list = [0, 0.3, 0.8]
-for noise_levels in [(0, 0), (0.1, 0.5), (0.8, 0.8)]:
+channels_list = [16, 32, 64, 128, 256]
+n_blocks_list = [1, 2, 4, 8]
+dropout_list = [0, 0.3, 0.5, 0.8]
+noise_levels_list = [(0, 0), (0.1, 0.5), (0.8, 0.8)]
+for noise_levels in noise_levels_list:
     for n_blocks in n_blocks_list:
         for channels in channels_list:
             n_channels = n_blocks*[channels]
             dilation_sizes = n_blocks*[1]
-            for ksize in ksize_list:
-                for dropout in dropout_list:
-                    option_dicts.append({"logdir": "log/chen_example/tcn", "cuda": True,
-                                         "dataset": "chen",
-                                         "model": "tcn",
-                                         "model_options": {"ksize": ksize,
-                                                           "n_channels": n_channels,
-                                                           "dilation_sizes": dilation_sizes,
-                                                           "dropout": dropout
-                                                           },
-                                        "dataset_options": {'train': {'sd_v': noise_levels[0],
-                                                                      'sd_w': noise_levels[1]},
-                                                            'valid': {'sd_v': noise_levels[0],
-                                                                      'sd_w': noise_levels[1]},
-                                                            'test': {'sd_v': noise_levels[0],
-                                                                     'sd_w': noise_levels[1]}}}
-                                        )
+            for dropout in dropout_list:
+                option_dicts.append({"logdir": logdir,
+                                     "cuda": True,
+                                     "dataset": "chen",
+                                     "model": "tcn",
+                                     "model_options": {"ksize": ksize,
+                                                       "n_channels": n_channels,
+                                                       "dilation_sizes": dilation_sizes,
+                                                       "dropout": dropout
+                                                       },
+                                    "dataset_options": {'seq_len': 100,
+                                                        'train': {'ntotbatch': 10,
+                                                                  'sd_v': noise_levels[0],
+                                                                  'sd_w': noise_levels[1]},
+                                                        'valid': {'ntotbatch': 2,
+                                                                  'sd_v': noise_levels[0],
+                                                                  'sd_w': noise_levels[1]},
+                                                        'test': {'ntotbatch': 10,
+                                                                 'sd_v': 0.0,
+                                                                 'sd_w': 0.0}}}
+                                    )
 
 
 
