@@ -13,7 +13,7 @@ option_dicts = []
 
 # TCN
 io_delay = 1
-ksize_list = 2
+ksize = 2
 logdir = "log/chen_example/tcn_2"
 channels_list = [16, 32, 64, 128, 256]
 n_blocks_list = [1, 2, 4, 8]
