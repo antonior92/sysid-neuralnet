@@ -31,6 +31,7 @@ for n_batches in n_batches_list:
                                          "cuda": True,
                                          "dataset": "chen",
                                          "model": "tcn",
+                                         "train_options": {"batch_size": 2},
                                          "model_options": {"ksize": ksize,
                                                            "n_channels": n_channels,
                                                            "dilation_sizes": dilation_sizes,
@@ -66,7 +67,7 @@ for n_batches in n_batches_list:
                                          "cuda": True,
                                          "dataset": "chen",
                                          "model": "mlp",
-                                         "train_options": {"batch_size": 2}
+                                         "train_options": {"batch_size": 2},
                                          "model_options": {"max_past_input": max_past_input,
                                                            "hidden_size": hidden_size,
                                                            "io_delay": io_delay
