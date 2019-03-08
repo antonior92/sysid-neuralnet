@@ -35,24 +35,24 @@ default_options_mlp = {
 }
 
 default_options_chen = {
-    'seq_len': 1000,
+    'seq_len': 100,
     'train': {
-        'ntotbatch': 10,
+        'ntotbatch': 100,
         'seed': 1,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0.3,
+        'sd_w': 0.3
     },
     'valid': {
-        'ntotbatch': 10,
+        'ntotbatch': 5,
         'seed': 2,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0.3,
+        'sd_w': 0.3
     },
     'test': {
-        'ntotbatch': 10,
+        'ntotbatch': 5,
         'seed': 3,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0,
+        'sd_w': 0
     }
 }
 
@@ -65,7 +65,7 @@ default_options_silverbox = {'seq_len_train': 2048,
 default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
-        'batch_size': 6,
+        'batch_size': 10,
         'epochs': 10000,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
@@ -96,7 +96,7 @@ default_options = {
     'test_options': default_options_test,
     'optimizer': default_options_optimizer,
 
-    'dataset': "silverbox",
+    'dataset': "chen",
     'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
