@@ -210,5 +210,7 @@ class TestCausalConvNet(unittest.TestCase):
             assert_equal(c.mode, 'stride')
 
 
+if __name__ == '__main__':
+    unittest.main()
 
 

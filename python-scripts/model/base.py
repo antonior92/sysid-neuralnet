@@ -72,9 +72,9 @@ class CausalConv(DynamicModule):
     def set_mode(self, mode):
         self.mode = mode
         if mode == 'dilation':
-            self.conv.dilation = self.subsampl
+            self.conv.dilation = (self.subsampl,)
         else:
-            self.conv.dilation = 1
+            self.conv.dilation = (1,)
 
     def get_requested_input(self, requested_output='internal'):
         if requested_output == 'internal':

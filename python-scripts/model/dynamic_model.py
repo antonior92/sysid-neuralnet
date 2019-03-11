@@ -29,6 +29,8 @@ class DynamicModel(nn.Module):
         else:
             raise Exception("Unimplemented model")
         self.mode = RunMode.ONE_STEP_AHEAD
+        if isinstance(self.m, CausalConvNet):
+            self.m.set_mode('dilation')
 
     @property
     def num_model_inputs(self):
@@ -38,12 +40,8 @@ class DynamicModel(nn.Module):
         self.mode = mode
         if mode == RunMode.ONE_STEP_AHEAD:
             self.m.set_requested_output('same')
-            if isinstance(self.m, CausalConvNet):
-                self.m.set_mode('dilation')
         elif mode == RunMode.FREE_RUN_SIMULATION:
             self.m.set_requested_output(1)
-            if isinstance(self.m, CausalConvNet):
-                self.m.set_mode('stride')
         else:
             raise AttributeError('Unknown mode {}'.format(mode))
 
