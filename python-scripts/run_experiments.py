@@ -70,7 +70,8 @@ for n_batches in n_batches_list:
                                          "train_options": {"batch_size": 2},
                                          "model_options": {"max_past_input": max_past_input,
                                                            "hidden_size": hidden_size,
-                                                           "io_delay": io_delay
+                                                           "io_delay": io_delay,
+                                                           "activation_fn": activation_fn
                                                            },
                                         "dataset_options": {'seq_len': 100,
                                                             'train': {'ntotbatch': n_batches,
