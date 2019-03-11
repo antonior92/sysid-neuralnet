@@ -20,6 +20,7 @@ n_blocks_list = [1, 2, 4, 8]
 dropout_list = [0, 0.3, 0.5, 0.8]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]
+normalization_list = ['batch_norm', "none"]
 for n_batches in n_batches_list:
     for noise_levels in noise_levels_list:
         for n_blocks in n_blocks_list:
@@ -27,27 +28,29 @@ for n_batches in n_batches_list:
                 n_channels = n_blocks*[channels]
                 dilation_sizes = n_blocks*[1]
                 for dropout in dropout_list:
-                    option_dicts.append({"logdir": logdir,
-                                         "cuda": True,
-                                         "dataset": "chen",
-                                         "model": "tcn",
-                                         "train_options": {"batch_size": 2},
-                                         "model_options": {"ksize": ksize,
-                                                           "n_channels": n_channels,
-                                                           "dilation_sizes": dilation_sizes,
-                                                           "dropout": dropout
-                                                           },
-                                        "dataset_options": {'seq_len': 100,
-                                                            'train': {'ntotbatch': n_batches,
-                                                                      'sd_v': noise_levels[0],
-                                                                      'sd_w': noise_levels[1]},
-                                                            'valid': {'ntotbatch': 2,
-                                                                      'sd_v': noise_levels[0],
-                                                                      'sd_w': noise_levels[1]},
-                                                            'test': {'ntotbatch': 10,
-                                                                     'sd_v': 0.0,
-                                                                     'sd_w': 0.0}}}
-                                        )
+                    for normalization in normalization_list:
+                        option_dicts.append({"logdir": logdir,
+                                             "cuda": True,
+                                             "dataset": "chen",
+                                             "model": "tcn",
+                                             "train_options": {"batch_size": 2},
+                                             "model_options": {"ksize": ksize,
+                                                               "n_channels": n_channels,
+                                                               "dilation_sizes": dilation_sizes,
+                                                               "dropout": dropout,
+                                                               "normalization": normalization
+                                                               },
+                                            "dataset_options": {'seq_len': 100,
+                                                                'train': {'ntotbatch': n_batches,
+                                                                          'sd_v': noise_levels[0],
+                                                                          'sd_w': noise_levels[1]},
+                                                                'valid': {'ntotbatch': 2,
+                                                                          'sd_v': noise_levels[0],
+                                                                          'sd_w': noise_levels[1]},
+                                                                'test': {'ntotbatch': 10,
+                                                                         'sd_v': 0.0,
+                                                                         'sd_w': 0.0}}}
+                                            )
 
 
 # MLP
@@ -57,7 +60,7 @@ hidden_size_list = [16, 32, 64, 128, 256]
 max_past_input_list = [2, 3, 4]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]
-activation_fn_list = ['sigmoid', 'relu']
+activation_fn_list = ['relu']
 for n_batches in n_batches_list:
     for noise_levels in noise_levels_list:
         for max_past_input in max_past_input_list:
