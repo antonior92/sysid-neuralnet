@@ -7,17 +7,7 @@ import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-def show_fig(fig, plotly = False):
-    if plotly:
-        import plotly.tools as tls
-        import plotly.offline as py
-        plotly_fig = tls.mpl_to_plotly(fig)
-        py.plot(plotly_fig)
-    else:
-        plt.show()
-
+from utils import show_fig
 
 # Get files names
 folder_list = glob.glob(os.path.join('log/chen/mlp', 'train_*'))
@@ -88,7 +78,7 @@ results_filtered_tcn = results[
     ]
 
 
-# Plot example
+#%% Plot example
 fig, ax = plt.subplots(1, 2)
 sns.lineplot(hue='model_options_ksize',
               y='vloss',
@@ -110,4 +100,4 @@ ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.35),
 ax[1].set_ylim([0.001, 2.5])
 ax[1].set_yscale('log')
 plt.tight_layout()
-show_fig(fig, True)
+show_fig(fig, False)
