@@ -23,7 +23,8 @@ default_options_tcn = {
     'n_channels': [50, 50, 50, 50],
     'dilation_sizes': None,
     'ar': True,
-    'io_delay': 0
+    'io_delay': 0,
+    'normalization': 'batch_norm'
 }
 
 default_options_mlp = {

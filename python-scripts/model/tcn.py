@@ -26,22 +26,33 @@ from .base import CausalConv, CausalConvNet
 
 
 class TemporalBlock(CausalConvNet):
-    def __init__(self, n_inputs, n_outputs, kernel_size, dilation, dropout=0.2):
+    def __init__(self, n_inputs, n_outputs, kernel_size, dilation, dropout=0.2, normalization='batch_norm'):
         super(TemporalBlock, self).__init__()
-        self.conv1 = weight_norm(CausalConv(n_inputs, n_outputs, kernel_size, subsampl=dilation))
-        self.relu1 = nn.ReLU()
-        self.dropout1 = nn.Dropout(dropout)
+        bias = False if normalization == 'batch_norm' else True
+        conv1 = CausalConv(n_inputs, n_outputs, kernel_size, subsampl=dilation, bias=bias)
+        if normalization == 'batch_norm':
+            bn1 = nn.BatchNorm1d(n_outputs)
+        elif normalization == 'weight_norm':
+            conv1 = weight_norm(conv1)
+        relu1 = nn.ReLU()
+        dropout1 = nn.Dropout(dropout)
 
-        self.conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation))
-        self.relu2 = nn.ReLU()
-        self.dropout2 = nn.Dropout(dropout)
+        conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation))
+        if normalization == 'batch_norm':
+            bn2 = nn.BatchNorm1d(n_outputs)
+        elif normalization == 'weight_norm':
+            conv2 = weight_norm(conv2)
+        relu2 = nn.ReLU()
+        dropout2 = nn.Dropout(dropout)
 
-        self.net = nn.Sequential(self.conv1, self.relu1, self.dropout1,
-                                 self.conv2, self.relu2, self.dropout2)
+        if normalization == 'batch_norm':
+            self.net = nn.Sequential(conv1, bn1, relu1, dropout1, conv2, bn2, relu2, dropout2)
+        else:
+            self.net = nn.Sequential(conv1, relu1, dropout1, conv2, relu2, dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         self.relu = nn.ReLU()
 
-        self.set_causal_conv_list([self.conv1, self.conv2])
+        self.set_causal_conv_list([conv1, conv2])
 
     def forward(self, x):
         res = x if self.downsample is None else self.downsample(x)
@@ -52,7 +63,7 @@ class TemporalBlock(CausalConvNet):
 
 
 class TCN(CausalConvNet):
-    def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2):
+    def __init__(self, num_inputs, num_outputs, n_channels, dilation_sizes=None, ksize=16, dropout=0.2, normalization='batch_norm'):
         super(TCN, self).__init__()
         layers = []
         num_levels = len(n_channels)
@@ -63,7 +74,8 @@ class TCN(CausalConvNet):
             in_channels = num_inputs if i == 0 else n_channels[i-1]
             out_channels = n_channels[i]
             layers += [TemporalBlock(in_channels, out_channels, ksize,
-                                     dilation=dilation_size, dropout=dropout)]
+                                     dilation=dilation_size, dropout=dropout,
+                                     normalization=normalization)]
         self.network = nn.Sequential(*layers)
         self.final_conv = nn.Conv1d(n_channels[-1], num_outputs, 1)
 
