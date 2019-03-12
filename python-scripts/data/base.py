@@ -2,34 +2,7 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 
-class DatasetExt(Dataset):
-    @property
-    def data_shape(self):
-        raise NotImplementedError
-
-    @property
-    def ny(self):
-        """number of channels of y"""
-        return self.data_shape[1][0]
-
-    @property
-    def nu(self):
-        """number of channels of u"""
-        return self.data_shape[0][0]
-
-    def __len__(self):
-        raise NotImplementedError
-
-    def __getitem__(self, item):
-        raise NotImplementedError
-
-
 class DataLoaderExt(DataLoader):
-    @property
-    def data_shape(self):
-        """Returns the shape of the output"""
-        return self.dataset.data_shape
-
     @property
     def nu(self):
         return self.dataset.nu
@@ -39,7 +12,7 @@ class DataLoaderExt(DataLoader):
         return self.dataset.ny
 
 
-class IODataset(DatasetExt):
+class IODataset(Dataset):
     """Create dataset from data.
 
     Parameters
@@ -59,10 +32,8 @@ class IODataset(DatasetExt):
         self.y = IODataset._batchify(y.astype(np.float32), seq_len)
         self.ntotbatch = self.u.shape[0]
         self.seq_len = self.u.shape[2]
-
-    @property
-    def data_shape(self):
-        return (1, self.seq_len), (1, self.seq_len)
+        self.nu = 1 if u.ndim == 1 else u.shape[1]
+        self.ny = 1 if y.ndim == 1 else y.shape[1]
 
     def __len__(self):
         return self.ntotbatch

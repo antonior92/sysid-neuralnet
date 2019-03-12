@@ -144,7 +144,7 @@ def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
 
 def clean_options(options):
     # Remove unused options
-    datasets = ["chen", 'silverbox']
+    datasets = ["chen", 'silverbox', 'f16gvt']
     if options["dataset"] not in datasets:
         raise Exception("Unknown dataset: " + options["dataset"])
     dataset_options = options[options["dataset"] + "_options"]

@@ -1,9 +1,9 @@
 import numpy as np
 import numpy.random as rd
-from data.base import DatasetExt
+from torch.utils.data import Dataset
 
 
-class ChenDataset(DatasetExt):
+class ChenDataset(Dataset):
     """Implement data generator for nonlinear example in _[1].
 
     Parameters
@@ -33,6 +33,8 @@ class ChenDataset(DatasetExt):
         self.sd_v, self.sd_w = sd_v, sd_w
         self.u, self.y = self._gen_data()
         self.sd_v, self.sd_w = sd_v, sd_w
+        self.nu = 1
+        self.ny = 1
 
     def _gen_data(self):
         total_lenght = self.seq_len*self.ntotbatch + self.burnout
