@@ -8,15 +8,16 @@ import zipfile
 from data.base import IODataset
 
 
-def create_f16gvt_datasets(seq_len, seq_len_eval=None):
+def create_f16gvt_datasets(seq_len_train=None, seq_len_val=None, seq_len_test=None,):
     """Load f16gvt data: train, validation and test datasets.
 
     Parameters
     ----------
-    seq_len: int
-        Maximum length for a batch on the training set. If `seq_len`
-        is smaller than the total data length, the training data will
-        be further divided in batches.
+    seq_len_train, seq_len_val, seq_len_test: int (optional)
+        Maximum length for a batch on, respectively, the training,
+        validation and test sets. If `seq_len` is smaller than the total
+        data length, the data will be further divided in batches. If None,
+        put the entire dataset on a single batch.
     seq_len_eval: int (optional)
         Maximum length for a batch on the validatiteston and  set. If `seq_len`
         is smaller than the total data length, the training data will
@@ -42,14 +43,14 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
     y_test = mat_two_test['Acceleration'] # Output test set
 
     # Properties data
-    n_pp = 16384 # Number of samples per period and per multisine realization
-    ptrans = 1 # One transient period
-    p = 2 # Last two periods are in steady-state
-    n = (ptrans + p) * n_pp # Number of samples per multisine realization
-    r = 8 # Number of multisine realizations used for training
-    r_val = 9 - r # Number of multisine realizations used for validation
-    r_test = 1 # One multisine realization in test set
-    n_y = 3 # Number of outputs
+    n_pp = 16384  # Number of samples per period and per multisine realization
+    ptrans = 1  # One transient period
+    p = 2  # Last two periods are in steady-state
+    n = (ptrans + p) * n_pp  # Number of samples per multisine realization
+    r = 8  # Number of multisine realizations used for training
+    r_val = 9 - r  # Number of multisine realizations used for validation
+    r_test = 1  # One multisine realization in test set
+    n_y = 3  # Number of outputs
 
     # Extract training data
     u_train = u[0:r, :].reshape(r * n, 1)
@@ -77,9 +78,9 @@ def create_f16gvt_datasets(seq_len, seq_len_eval=None):
     u_test = u_test.reshape(r_test * n, 1)
     y_test = y_test.transpose((2, 1, 0)).reshape((r_test * n, n_y))
 
-    dataset_train = IODataset(u_train, y_train, seq_len)
-    dataset_val = IODataset(u_val, y_val, seq_len_eval)
-    dataset_test = IODataset(u_test, y_test, seq_len_eval)
+    dataset_train = IODataset(u_train, y_train, seq_len_train)
+    dataset_val = IODataset(u_val, y_val, seq_len_val)
+    dataset_test = IODataset(u_test, y_test, seq_len_test)
 
     return dataset_train, dataset_val, dataset_test
 

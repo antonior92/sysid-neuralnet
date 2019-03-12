@@ -65,6 +65,12 @@ default_options_silverbox = {'seq_len_train': 2048,
                              'train_split': None,
                              'shuffle_seed': None}
 
+
+default_options_f16gvt = {'seq_len_train': 2048,
+                          'seq_len_val': 2048,
+                          'seq_len_test': None}
+
+
 default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
