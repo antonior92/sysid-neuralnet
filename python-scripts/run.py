@@ -74,7 +74,7 @@ default_options_f16gvt = {'seq_len_train': 2048,
 default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
-        'batch_size': 10,
+        'batch_size': 1,
         'epochs': 10000,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,

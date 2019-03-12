@@ -93,7 +93,6 @@ for n_batches in n_batches_list:
 
 # LSTM
 io_delay = 1
-ksize = 2
 logdir = "log/chen_example/lstm"
 hidden_size_list = [16, 32, 64, 128]
 num_layers_list = [1, 2, 3]
