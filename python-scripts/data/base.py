@@ -40,9 +40,21 @@ class DataLoaderExt(DataLoader):
 
 
 class IODataset(DatasetExt):
+    """Create dataset from data.
+
+    Parameters
+    ----------
+    u, y: ndarray, shape (total_len, n_channels) or (total_len,)
+        Input and output signals. It should be either a 1d array or a 2d array.
+    seq_len: int (optional)
+        Maximum length for a batch on, respectively. If `seq_len` is smaller than the total
+        data length, the data will be further divided in batches. If None,
+        put the entire dataset on a single batch.
+
+    """
     def __init__(self, u, y, seq_len=None):
         if seq_len is None:
-            seq_len = u.shape[-1]
+            seq_len = u.shape[0]
         self.u = IODataset._batchify(u.astype(np.float32), seq_len)
         self.y = IODataset._batchify(y.astype(np.float32), seq_len)
         self.ntotbatch = self.u.shape[0]
