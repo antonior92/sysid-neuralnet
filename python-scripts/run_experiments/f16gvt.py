@@ -27,7 +27,7 @@ for normalization in normalization_list:
             for channels in channels_list:
                 for ds in ds_list:
                     n_channels = n_blocks*[channels]
-                    dilation_sizes = [ds**i for i in range(len(n_blocks))]
+                    dilation_sizes = [ds**i for i in range(n_blocks)]
                     for dropout in dropout_list:
                         option_dicts.append({"logdir": logdir,
                                              "cuda": True,
