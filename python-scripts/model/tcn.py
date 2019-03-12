@@ -37,7 +37,7 @@ class TemporalBlock(CausalConvNet):
         relu1 = nn.ReLU()
         dropout1 = nn.Dropout(dropout)
 
-        conv2 = weight_norm(CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation))
+        conv2 = CausalConv(n_outputs, n_outputs, kernel_size, subsampl=dilation)
         if normalization == 'batch_norm':
             bn2 = nn.BatchNorm1d(n_outputs)
         elif normalization == 'weight_norm':
