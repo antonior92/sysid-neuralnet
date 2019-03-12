@@ -17,6 +17,7 @@ ksize = 2
 logdir = "log/chen_example/tcn_2"
 channels_list = [16, 32, 64, 128, 256]
 n_blocks_list = [1, 2, 4, 8]
+ds_list = []
 dropout_list = [0, 0.3, 0.5, 0.8]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]
@@ -25,32 +26,33 @@ for n_batches in n_batches_list:
     for noise_levels in noise_levels_list:
         for n_blocks in n_blocks_list:
             for channels in channels_list:
-                n_channels = n_blocks*[channels]
-                dilation_sizes = n_blocks*[1]
-                for dropout in dropout_list:
-                    for normalization in normalization_list:
-                        option_dicts.append({"logdir": logdir,
-                                             "cuda": True,
-                                             "dataset": "chen",
-                                             "model": "tcn",
-                                             "train_options": {"batch_size": 2},
-                                             "model_options": {"ksize": ksize,
-                                                               "n_channels": n_channels,
-                                                               "dilation_sizes": dilation_sizes,
-                                                               "dropout": dropout,
-                                                               "normalization": normalization
-                                                               },
-                                            "dataset_options": {'seq_len': 100,
-                                                                'train': {'ntotbatch': n_batches,
-                                                                          'sd_v': noise_levels[0],
-                                                                          'sd_w': noise_levels[1]},
-                                                                'valid': {'ntotbatch': 2,
-                                                                          'sd_v': noise_levels[0],
-                                                                          'sd_w': noise_levels[1]},
-                                                                'test': {'ntotbatch': 10,
-                                                                         'sd_v': 0.0,
-                                                                         'sd_w': 0.0}}}
-                                            )
+                for ds in ds_list:
+                    n_channels = n_blocks*[channels]
+                    dilation_sizes = [ds**i for i in range(len(n_blocks))]
+                    for dropout in dropout_list:
+                        for normalization in normalization_list:
+                            option_dicts.append({"logdir": logdir,
+                                                 "cuda": True,
+                                                 "dataset": "chen",
+                                                 "model": "tcn",
+                                                 "train_options": {"batch_size": 2},
+                                                 "model_options": {"ksize": ksize,
+                                                                   "n_channels": n_channels,
+                                                                   "dilation_sizes": dilation_sizes,
+                                                                   "dropout": dropout,
+                                                                   "normalization": normalization
+                                                                   },
+                                                "dataset_options": {'seq_len': 100,
+                                                                    'train': {'ntotbatch': n_batches,
+                                                                              'sd_v': noise_levels[0],
+                                                                              'sd_w': noise_levels[1]},
+                                                                    'valid': {'ntotbatch': 2,
+                                                                              'sd_v': noise_levels[0],
+                                                                              'sd_w': noise_levels[1]},
+                                                                    'test': {'ntotbatch': 10,
+                                                                             'sd_v': 0.0,
+                                                                             'sd_w': 0.0}}}
+                                                )
 
 
 # MLP
@@ -93,26 +95,25 @@ for n_batches in n_batches_list:
 io_delay = 1
 ksize = 2
 logdir = "log/chen_example/lstm"
-hidden_size = [16, 32, 64, 128]
-num_layers = [1, 2, 3]
+hidden_size_list = [16, 32, 64, 128]
+num_layers_list = [1, 2, 3]
 dropout_list = [0, 0.3, 0.5, 0.8]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]
 for n_batches in n_batches_list:
     for noise_levels in noise_levels_list:
-        for max_past_input in max_past_input_list:
+        for num_layers in num_layers_list:
             for hidden_size in hidden_size_list:
-                for activation_fn in activation_fn_list:
+                for dropout in dropout_list:
                     option_dicts.append({"logdir": logdir,
                                          "cuda": True,
                                          "dataset": "chen",
                                          "model": "mlp",
                                          "train_options": {"batch_size": 2},
-                                         "model_options": {"max_past_input": max_past_input,
-                                                           "hidden_size": hidden_size,
-                                                           "io_delay": io_delay,
-                                                           "activation_fn": activation_fn
-                                                           },
+                                         "model_options": {'hidden_size': hidden_size,
+                                                           'io_delay': io_delay,
+                                                           'num_layers': num_layers,
+                                                           'dropout': dropout},
                                         "dataset_options": {'seq_len': 100,
                                                             'train': {'ntotbatch': n_batches,
                                                                       'sd_v': noise_levels[0],
