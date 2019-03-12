@@ -57,7 +57,7 @@ class DynamicModel(nn.Module):
             x = u_delayed
 
         if self.m.has_internal_state:
-            state_0 = self.m.init_hidden(num_batches)
+            state_0 = self.m.init_hidden(num_batches, u.device)
             y_pred, state_f = self.m(x, state_0)
         else:
             y_pred = self.m(x)
@@ -73,7 +73,7 @@ class DynamicModel(nn.Module):
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
 
             if self.m.has_internal_state:
-                state = self.m.init_hidden(num_batches)
+                state = self.m.init_hidden(num_batches, u.device)
 
             start = 0 if self.zero_initial_state else rf
             for i in range(start, seq_len):

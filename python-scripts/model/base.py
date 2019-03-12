@@ -39,7 +39,7 @@ class DynamicModule(nn.Module):
     def forward(self, *input):
         raise NotImplementedError
 
-    def init_hidden(self, batch_size):
+    def init_hidden(self, batch_size, device=None):
         if self.has_internal_state:
             raise NotImplementedError
 

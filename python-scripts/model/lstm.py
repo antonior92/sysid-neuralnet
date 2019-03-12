@@ -23,9 +23,9 @@ class LSTM(DynamicModule):
             requested_output = self.requested_output
         return requested_output
 
-    def init_hidden(self, batch_size):
-        return (torch.zeros(self.lstm.num_layers, batch_size, self.lstm.hidden_size),
-                torch.zeros(self.lstm.num_layers, batch_size, self.lstm.hidden_size))
+    def init_hidden(self, batch_size, device=None):
+        return (torch.zeros(self.lstm.num_layers, batch_size, self.lstm.hidden_size, device=device),
+                torch.zeros(self.lstm.num_layers, batch_size, self.lstm.hidden_size, device=device))
 
     def forward(self, input_data, state):
         input_t = input_data.permute((2, 0, 1))
