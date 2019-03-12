@@ -108,7 +108,7 @@ for n_batches in n_batches_list:
                     option_dicts.append({"logdir": logdir,
                                          "cuda": True,
                                          "dataset": "chen",
-                                         "model": "mlp",
+                                         "model": "lstm",
                                          "train_options": {"batch_size": 2},
                                          "model_options": {'hidden_size': hidden_size,
                                                            'io_delay': io_delay,
