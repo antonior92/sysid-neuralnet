@@ -17,11 +17,11 @@ ksize = 2
 logdir = "log/chen_example/tcn_2"
 channels_list = [16, 32, 64, 128, 256]
 n_blocks_list = [1, 2, 4, 8]
-ds_list = []
+ds_list = [2]
 dropout_list = [0, 0.3, 0.5, 0.8]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]
-normalization_list = []
+normalization_list = ['none', 'batch_norm', 'weight_norm']
 for n_batches in n_batches_list:
     for noise_levels in noise_levels_list:
         for n_blocks in n_blocks_list:
@@ -95,7 +95,7 @@ for n_batches in n_batches_list:
 io_delay = 1
 logdir = "log/chen_example/lstm"
 hidden_size_list = [16, 32, 64, 128]
-num_layers_list = [1, 2, 3]
+num_layers_list = []  # [1, 2, 3]
 dropout_list = [0, 0.3, 0.5, 0.8]
 noise_levels_list = [(0, 0), (0.3, 0.3), (0.6, 0.6)]
 n_batches_list = [5, 20, 80]

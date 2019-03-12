@@ -75,7 +75,7 @@ for max_past_input in max_past_input_list:
 io_delay = 0
 logdir = "log/f16gvt/lstm"
 hidden_size_list = [16, 32, 64, 128]
-num_layers_list = [1, 2]
+num_layers_list = [1, 2, 3]
 dropout_list = [0, 0.3, 0.5, 0.8]
 for num_layers in num_layers_list:
     for hidden_size in hidden_size_list:
