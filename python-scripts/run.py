@@ -12,9 +12,11 @@ import torch
 import numpy as np
 
 default_options_lstm = {
-    'hidden_size': 5,
+    'hidden_size': 128,
     'ar': True,
-    'io_delay': 0
+    'io_delay': 0,
+    'num_layers': 1,
+    'dropout': 0
 }
 
 default_options_tcn = {
@@ -102,7 +104,7 @@ default_options = {
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
 
-    'model': 'tcn',
+    'model': 'lstm',
     'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
