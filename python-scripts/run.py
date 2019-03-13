@@ -105,13 +105,13 @@ default_options = {
     'test_options': default_options_test,
     'optimizer': default_options_optimizer,
 
-    'dataset': "chen",
+    'dataset': "f16gvt",
     'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
     'f16gvt_options': default_options_f16gvt,
 
-    'model': 'lstm',
+    'model': 'tcn',
     'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
