@@ -26,29 +26,15 @@ seqlen_list = [32*2**i for i in range(6)]
 batchsize_list = [8*2**i for i in range(6)]
 lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
-for dropout in dropout_list:
-    for layer1 in tcn_layer1:
-        for layer2 in tcn_layer2:
-            for layer3 in tcn_layer3:
-                n_channels = [layer1]
-                if layer2 is None:
-                    if layer3 is not None:
-                        continue
-                else:
-                    n_channels += [layer2]
+lstm_size_list = [4*i**2 for i in range(5)]
 
-                if layer3 is not None:
-                    n_channels += [layer3]
-
-                option_dicts.append({"logdir": "log/tcn_2", "cuda": True,
-                                     "dataset": "silverbox", "model": "tcn",
-                                     "normalize": True, "normalize_n_std": 1,
-                                     "train_options": {},
-                                     "model_options": {'dilation_sizes': [1]*len(n_channels), 'dropout': dropout,
-                                                       'ksize': 2,
-                                                       "n_channels": n_channels}
-                                     }
-                                    )
+for lstm_size in lstm_size_list:
+    option_dicts.append({"logdir": "log/lstm_1", "cuda": True,
+                         "dataset": "silverbox", "model": "lstm",
+                         "normalize": True, "normalize_n_std": 1,
+                         "train_options": {},
+                         "model_options": {'hidden_size': lstm_size}
+                         })
 
 
 num_processes = 8
