@@ -1,6 +1,7 @@
 from data.base import DataLoaderExt
 from data.chen_example import ChenDataset
 from data.silverbox import create_silverbox_datasets
+from data.f16gvt import create_f16gvt_datasets
 
 
 def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
@@ -13,6 +14,13 @@ def load_dataset(dataset, dataset_options, train_batch_size, test_batch_size):
                                     batch_size=test_batch_size, shuffle=False, num_workers=4)
     elif dataset == 'silverbox':
         dataset_train, dataset_valid, dataset_test = create_silverbox_datasets(**dataset_options)
+        # Dataloader
+        loader_train = DataLoaderExt(dataset_train, batch_size=train_batch_size, shuffle=True, num_workers=4)
+        loader_valid = DataLoaderExt(dataset_valid, batch_size=test_batch_size, shuffle=False, num_workers=4)
+        loader_test = DataLoaderExt(dataset_test, batch_size=test_batch_size, shuffle=False, num_workers=4)
+
+    elif dataset == 'f16gvt':
+        dataset_train, dataset_valid, dataset_test = create_f16gvt_datasets(**dataset_options)
         # Dataloader
         loader_train = DataLoaderExt(dataset_train, batch_size=train_batch_size, shuffle=True, num_workers=4)
         loader_valid = DataLoaderExt(dataset_valid, batch_size=test_batch_size, shuffle=False, num_workers=4)

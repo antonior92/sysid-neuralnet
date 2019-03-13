@@ -1,9 +1,9 @@
 import numpy as np
 import numpy.random as rd
-from data.base import DatasetExt
+from torch.utils.data import Dataset
 
 
-class ChenDataset(DatasetExt):
+class ChenDataset(Dataset):
     """Implement data generator for nonlinear example in _[1].
 
     Parameters
@@ -12,6 +12,8 @@ class ChenDataset(DatasetExt):
         Sequence lenght for a batch on the dataset.
     ntotbatch: int
         Total number of batches.
+    burnout: int
+        Number of sequences to be discarded (removing the transient behaviour).
     seed: int
         Random seed.
     sd_v, sd_w: float
@@ -22,20 +24,28 @@ class ChenDataset(DatasetExt):
      .. [1] S. Chen, S. A. Billings, P. M. Grant, Non-Linear System Identification Using
             Neural Networks, International Journal of Control 51 (6) (1990) 1191–1214.
     """
-    def __init__(self, seq_len, ntotbatch, seed=1, sd_v=0.1, sd_w=0.5):
+    def __init__(self, seq_len, ntotbatch, burnout=100, seed=1, sd_v=0.1, sd_w=0.5):
         self.seed = seed
         self.rng = rd.RandomState(seed)
         self.seq_len = seq_len
         self.ntotbatch = ntotbatch
+        self.burnout = burnout
         self.sd_v, self.sd_w = sd_v, sd_w
         self.u, self.y = self._gen_data()
+        self.sd_v, self.sd_w = sd_v, sd_w
+        self.nu = 1
+        self.ny = 1
 
     def _gen_data(self):
-        u = np.zeros((self.ntotbatch, 1, self.seq_len))
-        y = np.zeros((self.ntotbatch, 1, self.seq_len))
-        for i in range(self.ntotbatch):
-            u[i, 0, :] = self._generate_random_input(self.seq_len, 5)
-            y[i, 0, :] = self._simulate_system(u[i, 0, :], self.sd_v, self.sd_w)
+        total_lenght = self.seq_len*self.ntotbatch + self.burnout
+
+        u = self._generate_random_input(total_lenght, 5)
+        y = self._simulate_system(u, self.sd_v, self.sd_w)
+
+        u, y = u[self.burnout:], y[self.burnout:]  # Remove burnout
+
+        u = u.reshape(self.ntotbatch, 1, self.seq_len)
+        y = y.reshape(self.ntotbatch, 1, self.seq_len)
         return u.astype(np.float32), y.astype(np.float32)
 
     @property

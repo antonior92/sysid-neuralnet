@@ -7,14 +7,16 @@ import train
 from logger import set_redirects
 import data.loader as loader
 from model.model_state import ModelState
-from model.utils import Normalizer1D
+from model.base import Normalizer1D
 import torch
 import numpy as np
 
 default_options_lstm = {
-    'hidden_size': 5,
+    'hidden_size': 128,
     'ar': True,
-    'io_delay': 0
+    'io_delay': 0,
+    'num_layers': 1,
+    'dropout': 0
 }
 
 default_options_tcn = {
@@ -23,7 +25,8 @@ default_options_tcn = {
     'n_channels': [50, 50, 50, 50],
     'dilation_sizes': None,
     'ar': True,
-    'io_delay': 0
+    'io_delay': 0,
+    'normalization': 'batch_norm'
 }
 
 default_options_mlp = {
@@ -35,24 +38,24 @@ default_options_mlp = {
 }
 
 default_options_chen = {
-    'seq_len': 1000,
+    'seq_len': 100,
     'train': {
-        'ntotbatch': 10,
+        'ntotbatch': 100,
         'seed': 1,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0.3,
+        'sd_w': 0.3
     },
     'valid': {
-        'ntotbatch': 10,
+        'ntotbatch': 5,
         'seed': 2,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0.3,
+        'sd_w': 0.3
     },
     'test': {
-        'ntotbatch': 10,
+        'ntotbatch': 5,
         'seed': 3,
-        'sd_v': 0.1,
-        'sd_w': 0.5
+        'sd_v': 0,
+        'sd_w': 0
     }
 }
 
@@ -62,10 +65,16 @@ default_options_silverbox = {'seq_len_train': 2048,
                              'train_split': None,
                              'shuffle_seed': None}
 
+
+default_options_f16gvt = {'seq_len_train': 2048,
+                          'seq_len_val': 2048,
+                          'seq_len_test': None}
+
+
 default_options_train = {
         'init_lr': 0.001,
         'min_lr': 1e-6,
-        'batch_size': 6,
+        'batch_size': 1,
         'epochs': 10000,
         'lr_scheduler_nepochs': 10,
         'lr_scheduler_factor': 10,
@@ -96,12 +105,13 @@ default_options = {
     'test_options': default_options_test,
     'optimizer': default_options_optimizer,
 
-    'dataset': "silverbox",
+    'dataset': "f16gvt",
     'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
+    'f16gvt_options': default_options_f16gvt,
 
-    'model': 'mlp',
+    'model': 'tcn',
     'model_options': {},
     'tcn_options': default_options_tcn,
     'lstm_options': default_options_lstm,
@@ -135,7 +145,7 @@ def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
 
 def clean_options(options):
     # Remove unused options
-    datasets = ["chen", 'silverbox']
+    datasets = ["chen", 'silverbox', 'f16gvt']
     if options["dataset"] not in datasets:
         raise Exception("Unknown dataset: " + options["dataset"])
     dataset_options = options[options["dataset"] + "_options"]

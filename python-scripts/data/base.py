@@ -2,34 +2,7 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 
-class DatasetExt(Dataset):
-    @property
-    def data_shape(self):
-        raise NotImplementedError
-
-    @property
-    def ny(self):
-        """number of channels of y"""
-        return self.data_shape[1][0]
-
-    @property
-    def nu(self):
-        """number of channels of u"""
-        return self.data_shape[0][0]
-
-    def __len__(self):
-        raise NotImplementedError
-
-    def __getitem__(self, item):
-        raise NotImplementedError
-
-
 class DataLoaderExt(DataLoader):
-    @property
-    def data_shape(self):
-        """Returns the shape of the output"""
-        return self.dataset.data_shape
-
     @property
     def nu(self):
         return self.dataset.nu
@@ -39,18 +12,28 @@ class DataLoaderExt(DataLoader):
         return self.dataset.ny
 
 
-class IODataset(DatasetExt):
+class IODataset(Dataset):
+    """Create dataset from data.
+
+    Parameters
+    ----------
+    u, y: ndarray, shape (total_len, n_channels) or (total_len,)
+        Input and output signals. It should be either a 1d array or a 2d array.
+    seq_len: int (optional)
+        Maximum length for a batch on, respectively. If `seq_len` is smaller than the total
+        data length, the data will be further divided in batches. If None,
+        put the entire dataset on a single batch.
+
+    """
     def __init__(self, u, y, seq_len=None):
         if seq_len is None:
-            seq_len = u.shape[-1]
+            seq_len = u.shape[0]
         self.u = IODataset._batchify(u.astype(np.float32), seq_len)
         self.y = IODataset._batchify(y.astype(np.float32), seq_len)
         self.ntotbatch = self.u.shape[0]
         self.seq_len = self.u.shape[2]
-
-    @property
-    def data_shape(self):
-        return (1, self.seq_len), (1, self.seq_len)
+        self.nu = 1 if u.ndim == 1 else u.shape[1]
+        self.ny = 1 if y.ndim == 1 else y.shape[1]
 
     def __len__(self):
         return self.ntotbatch

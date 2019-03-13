@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import MLP, TCN, LSTM
-from model.utils import RunMode
+from .base import RunMode, CausalConvNet
 
 
 class DynamicModel(nn.Module):
@@ -18,6 +18,7 @@ class DynamicModel(nn.Module):
         self.io_delay = io_delay
         self.normalizer_input = normalizer_input
         self.normalizer_output = normalizer_output
+        self.zero_initial_state = False
 
         # Initialize model
         if model == 'mlp':
@@ -28,15 +29,23 @@ class DynamicModel(nn.Module):
             self.m = LSTM(self.num_model_inputs, self.num_outputs, *self.args, **self.kwargs)
         else:
             raise Exception("Unimplemented model")
-        self.mode = self.m.mode
+        self.mode = RunMode.ONE_STEP_AHEAD
+        if isinstance(self.m, CausalConvNet):
+            self.m.set_mode('dilation')
 
     @property
     def num_model_inputs(self):
         return self.num_inputs + self.num_outputs if self.ar else self.num_inputs
 
-    def set_mode(self, mode):
+    def set_mode(self, mode, zero_initial_state=False):
         self.mode = mode
-        self.m.set_mode(mode)
+        self.zero_initial_state = zero_initial_state
+        if mode == RunMode.ONE_STEP_AHEAD:
+            self.m.set_requested_output('same')
+        elif mode == RunMode.FREE_RUN_SIMULATION:
+            self.m.set_requested_output(1)
+        else:
+            raise AttributeError('Unknown mode {}'.format(mode))
 
     def one_step_ahead(self, u, y):
         num_batches, _, _ = u.size()
@@ -48,7 +57,7 @@ class DynamicModel(nn.Module):
             x = u_delayed
 
         if self.m.has_internal_state:
-            state_0 = self.m.init_hidden(num_batches)
+            state_0 = self.m.init_hidden(num_batches, u.device)
             y_pred, state_f = self.m(x, state_0)
         else:
             y_pred = self.m(x)
@@ -57,34 +66,35 @@ class DynamicModel(nn.Module):
 
     def free_run_simulation(self, u, y):
         if self.ar:
-            rf = self.m.receptive_field
+            rf = self.m.get_requested_input(requested_output=1)
             num_batches, _, seq_len = u.size()
-            y_sim = torch.zeros(num_batches, self.num_outputs, seq_len+1, device=u.device)
+            y_sim = y.clone()
 
             u_delayed = DynamicModel._get_u_delayed(u, self.io_delay)
 
             if self.m.has_internal_state:
-                state = self.m.init_hidden(num_batches)
+                state = self.m.init_hidden(num_batches, u.device)
 
-            for i in range(seq_len):
+            start = 0 if self.zero_initial_state else rf
+            for i in range(start, seq_len):
                 if i < rf:
-                    y_in = y_sim[:, :, :i+1]
-                    u_in = u_delayed[:, :, :i+1]
+                    y_in = F.pad(y_sim[:, :, :i], [rf-i, 0])
+                    u_in = F.pad(u_delayed[:, :, :i+1], [rf-i-1, 0])
                 else:
-                    y_in = y_sim[:, :, i-rf+1:i+1]
+                    y_in = y_sim[:, :, i-rf:i]
                     u_in = u_delayed[:, :, i-rf+1:i+1]
 
                 x = torch.cat((u_in, y_in), 1)
 
                 if self.m.has_internal_state:
                     y_next, state = self.m(x, state)
-                    y_sim[:, :, i + 1] = y_next[:, :, -1]
+                    y_sim[:, :, i] = y_next[:, :, -1]
                 else:
                     y_next = self.m(x)
-                    y_sim[:, :, i + 1] = y_next[:, :, -1]
+                    y_sim[:, :, i] = y_next[:, :, -1]
         else:
             y_sim = self.one_step_ahead(u, y)
-        return y_sim[..., 1:]
+        return y_sim
 
     @staticmethod
     def _get_u_delayed(u, io_delay):

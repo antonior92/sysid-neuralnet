@@ -54,16 +54,17 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
         if not cuda:
             print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-    # Train
-    epoch = start_epoch
-    vloss = validate(loader_valid)
-    all_losses = []
-    all_vlosses = []
-    best_vloss = vloss
-    start_time = time.clock()
+
 
     try:
         modelstate.model.set_mode(train_options['training_mode'])
+        # Train
+        epoch = start_epoch
+        vloss = validate(loader_valid)
+        all_losses = []
+        all_vlosses = []
+        best_vloss = vloss
+        start_time = time.clock()
         for epoch in range(start_epoch, start_epoch + train_options["epochs"]+1):
             # Train and validate
             train(epoch)
