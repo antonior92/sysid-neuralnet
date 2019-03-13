@@ -23,18 +23,21 @@ tcn_layer3 += [None]
 dropout_list = [0, 0.05, 0.1, 0.2]
 
 seqlen_list = [32*2**i for i in range(6)]
-batchsize_list = [8*2**i for i in range(6)]
+
 lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
 lstm_size_list = [4*i**2 for i in range(5)]
+batchsize_list = [1*2**i for i in range(6)]
+
 
 for lstm_size in lstm_size_list:
-    option_dicts.append({"logdir": "log/lstm_1", "cuda": True,
-                         "dataset": "silverbox", "model": "lstm",
-                         "normalize": True, "normalize_n_std": 1,
-                         "train_options": {},
-                         "model_options": {'hidden_size': lstm_size}
-                         })
+    for batchsize in batchsize_list:
+        option_dicts.append({"logdir": "log/lstm_1", "cuda": True,
+                             "dataset": "silverbox", "model": "lstm",
+                             "normalize": True, "normalize_n_std": 1,
+                             "train_options": {"batch_size": batchsize},
+                             "model_options": {'hidden_size': lstm_size}
+                             })
 
 
 num_processes = 8
