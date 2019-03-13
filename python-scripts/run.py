@@ -109,6 +109,7 @@ default_options = {
     'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
+    'f16gvt_options': default_options_f16gvt,
 
     'model': 'lstm',
     'model_options': {},
