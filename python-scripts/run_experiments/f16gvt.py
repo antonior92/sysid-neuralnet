@@ -9,7 +9,7 @@ def sub_run(dict):
 
 
 option_dicts = []
-
+cuda = False
 
 # TCN
 io_delay = 0
@@ -30,7 +30,7 @@ for normalization in normalization_list:
                     dilation_sizes = [ds**i for i in range(n_blocks)]
                     for dropout in dropout_list:
                         option_dicts.append({"logdir": logdir,
-                                             "cuda": True,
+                                             "cuda": cuda,
                                              "dataset": "f16gvt",
                                              "model": "tcn",
                                              "train_options": {"batch_size": 2},
@@ -56,8 +56,8 @@ for max_past_input in max_past_input_list:
     for hidden_size in hidden_size_list:
         for activation_fn in activation_fn_list:
             option_dicts.append({"logdir": logdir,
-                                 "cuda": True,
-                                 "dataset": "chen",
+                                 "cuda": cuda,
+                                 "dataset": "f16gvt",
                                  "model": "mlp",
                                  "train_options": {"batch_size": 2},
                                  "model_options": {"max_past_input": max_past_input,
@@ -81,8 +81,8 @@ for num_layers in num_layers_list:
     for hidden_size in hidden_size_list:
         for dropout in dropout_list:
             option_dicts.append({"logdir": logdir,
-                                 "cuda": True,
-                                 "dataset": "chen",
+                                 "cuda": cuda,
+                                 "dataset": "f16gvt",
                                  "model": "lstm",
                                  "train_options": {"batch_size": 2},
                                  "model_options": {'hidden_size': hidden_size,
@@ -98,7 +98,7 @@ for num_layers in num_layers_list:
 
 
 
-num_processes = 8
+num_processes = 1
 processes = []
 while len(option_dicts) > 0:
     opt_dict = option_dicts.pop()
