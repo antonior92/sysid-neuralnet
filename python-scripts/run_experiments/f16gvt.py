@@ -9,7 +9,7 @@ def sub_run(dict):
 
 
 option_dicts = []
-cuda = False
+cuda = True
 
 # TCN
 io_delay = 0
@@ -98,7 +98,7 @@ for num_layers in num_layers_list:
 
 
 
-num_processes = 1
+num_processes = 8
 processes = []
 while len(option_dicts) > 0:
     opt_dict = option_dicts.pop()
