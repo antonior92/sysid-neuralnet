@@ -35,16 +35,7 @@ for i, m in enumerate(models):
                           (results['train_sd_v'] == sd_v) &
                           (results['train_ntotbatch'] == n_batch)]
             entry = aux.ix[aux["vloss"].idxmin()]
-            if m == 'tcn':
-                print('(TCN) noise_levels={0}, n_batch={1}, vloss={2}, dropout={3},'
-                      ' n_layers={4}, depth={5}, dilations={6}'. format(entry['train_sd_v'],
-                                                              entry['train_ntotbatch'],
-                                                              entry['vloss'],
-                                                              entry['model_options_dropout'],
-                                                              entry['model_options_n_channels_0'],
-                                                              entry['model_options_n_channels_len'],
-                                                              entry['model_options_dilation_sizes_1']
-                                                              ))
+
             mins[i, j, k] = entry["vloss"]
 
 mins_da = xr.DataArray(mins,
@@ -142,6 +133,18 @@ sns.lineplot(y='vloss',
              style='train_sd_v',
              data=results_tcn[(results['train_ntotbatch'] == 20) &
                               (results['model_options_dropout'] == 0.8)],
+             legend='full',
+             estimator='min',
+             ci=None)
+show_fig(fig, False)
+
+# %% (TCN) Effect of the number of channels/layers/norm
+fig, ax = plt.subplots()
+sns.lineplot(y='vloss',
+             x='model_options_n_channels_len',
+             hue='train_ntotbatch',
+             style='model_options_normalization',
+             data=results_tcn[(results['train_sd_v'] == 0.3)],
              legend='full',
              estimator='min',
              ci=None)
