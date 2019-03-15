@@ -35,7 +35,8 @@ for hidden_size in mlp_hidden_size_list:
                              "dataset": "silverbox", "model": "mlp",
                              "normalize": True, "normalize_n_std": 1,
                              "train_options": {"batch_size": 6},
-                             "model_options": {'hidden_size': hidden_size}
+                             "model_options": {'hidden_size': hidden_size,
+                                               "activation_fn": "relu"}
                              })
 
 
