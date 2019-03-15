@@ -36,10 +36,10 @@ for layer1 in tcn_layer1:
             if layer2 is not None:
                 n_channels += [layer2]
 
-            option_dicts.append({"logdir": "log/tcn_6", "cuda": True,
+            option_dicts.append({"logdir": "log/tcn_7", "cuda": True,
                                  "dataset": "silverbox", "model": "tcn",
                                  "normalize": True, "normalize_n_std": 1,
-                                 "train_options": {"batch_size": 6},
+                                 "train_options": {"batch_size": 4},
                                  "model_options": {'dilation_sizes': [1]*len(n_channels),
                                                    'dropout': 0.0,
                                                    'ksize': 2,
