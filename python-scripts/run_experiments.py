@@ -39,7 +39,7 @@ for layer1 in tcn_layer1:
             option_dicts.append({"logdir": "log/tcn_5", "cuda": True,
                                  "dataset": "silverbox", "model": "tcn",
                                  "normalize": True, "normalize_n_std": 1,
-                                 "train_options": {},
+                                 "train_options": {"batch_size": 6},
                                  "model_options": {'dilation_sizes': [1]*len(n_channels), 'dropout': 0.0,
                                                    'ksize': 2,
                                                    "n_channels": n_channels}
