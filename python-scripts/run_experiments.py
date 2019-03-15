@@ -30,13 +30,12 @@ lstm_size_list = [4*i**2 for i in range(5)]
 batchsize_list = [1*2**i for i in range(6)]
 
 
-for lstm_size in lstm_size_list:
-    for batchsize in batchsize_list:
-        option_dicts.append({"logdir": "log/lstm_1", "cuda": True,
-                             "dataset": "silverbox", "model": "lstm",
+for hidden_size in mlp_hidden_size_list:
+        option_dicts.append({"logdir": "log/mlp_v2_1", "cuda": True,
+                             "dataset": "silverbox", "model": "mlp",
                              "normalize": True, "normalize_n_std": 1,
-                             "train_options": {"batch_size": batchsize},
-                             "model_options": {'hidden_size': lstm_size}
+                             "train_options": {"batch_size": 6},
+                             "model_options": {'hidden_size': hidden_size}
                              })
 
 
