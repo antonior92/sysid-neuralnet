@@ -30,15 +30,21 @@ lstm_size_list = [4*i**2 for i in range(5)]
 batchsize_list = [1*2**i for i in range(6)]
 
 
-for hidden_size in mlp_hidden_size_list:
-        option_dicts.append({"logdir": "log/mlp_v2_1", "cuda": True,
-                             "dataset": "silverbox", "model": "mlp",
-                             "normalize": True, "normalize_n_std": 1,
-                             "train_options": {"batch_size": 6},
-                             "model_options": {'hidden_size': hidden_size,
-                                               "activation_fn": "relu"}
-                             })
+for layer1 in tcn_layer1:
+    for layer2 in tcn_layer2:
+            n_channels = [layer1]
+            if layer2 is not None:
+                n_channels += [layer2]
 
+            option_dicts.append({"logdir": "log/tcn_5", "cuda": True,
+                                 "dataset": "silverbox", "model": "tcn",
+                                 "normalize": True, "normalize_n_std": 1,
+                                 "train_options": {},
+                                 "model_options": {'dilation_sizes': [1]*len(n_channels), 'dropout': 0.0,
+                                                   'ksize': 2,
+                                                   "n_channels": n_channels}
+                                 }
+                                )
 
 num_processes = 8
 processes = []
