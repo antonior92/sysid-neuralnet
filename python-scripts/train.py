@@ -87,7 +87,7 @@ def run_train(start_epoch, cuda, modelstate, logdir, loader_train, loader_valid,
             print('-'*100)
             # lr scheduler
             if len(all_vlosses) > train_options['lr_scheduler_nepochs'] and \
-                    vloss > max(all_vlosses[-train_options['lr_scheduler_nepochs']-1:-1]):
+                    vloss >= max(all_vlosses[-train_options['lr_scheduler_nepochs']-1:-1]):
                 lr = lr / train_options['lr_scheduler_factor']
                 for param_group in modelstate.optimizer.param_groups:
                     param_group['lr'] = lr
