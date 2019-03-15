@@ -33,7 +33,7 @@ batchsize_list = [1*2**i for i in range(6)]
 for max_past_input in mlp_max_past_input_list:
     for hidden_size in mlp_hidden_size_list:
             option_dicts.append({"logdir": "log/mlp_without_normalization_1", "cuda": True,
-                                 "dataset": "silverbox", "model": "tcn",
+                                 "dataset": "silverbox", "model": "mlp",
                                  "normalize": False, "normalize_n_std": 1,
                                  "train_options": {"batch_size": 4, "lr_scheduler_factor": 2},
                                  "model_options": {'hidden_size': hidden_size,
