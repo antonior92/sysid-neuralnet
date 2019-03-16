@@ -26,30 +26,41 @@ seqlen_list = [32*2**i for i in range(6)]
 batchsize_list = [8*2**i for i in range(6)]
 lr_list = [0.001*math.sqrt(0.1)**i for i in range(4)]
 
-for dropout in dropout_list:
-    for layer1 in tcn_layer1:
-        for layer2 in tcn_layer2:
-            for layer3 in tcn_layer3:
-                n_channels = [layer1]
-                if layer2 is None:
-                    if layer3 is not None:
-                        continue
-                else:
-                    n_channels += [layer2]
 
-                if layer3 is not None:
-                    n_channels += [layer3]
 
-                option_dicts.append({"logdir": "log/tcn_2", "cuda": True,
-                                     "dataset": "silverbox", "model": "tcn",
-                                     "normalize": True, "normalize_n_std": 1,
-                                     "train_options": {},
-                                     "model_options": {'dilation_sizes': [1]*len(n_channels), 'dropout': dropout,
-                                                       'ksize': 2,
-                                                       "n_channels": n_channels}
-                                     }
-                                    )
+for layer1 in tcn_layer1:
+    for layer2 in tcn_layer2:
+            n_channels = [layer1]
+            if layer2 is not None:
+                n_channels += [layer2]
 
+            option_dicts.append({"logdir": "log/tcn_without_normalization_2", "cuda": True,
+                                 "dataset": "silverbox", "model": "tcn",
+                                 "normalize": False, "normalize_n_std": 1,
+                                 "train_options": {"batch_size": 4, "lr_scheduler_factor": 2},
+                                 "model_options": {'dilation_sizes': [1]*len(n_channels),
+                                                   'dropout': 0.0,
+                                                   'ksize': 2,
+                                                   "n_channels": n_channels}
+                                 }
+                                )
+
+for layer1 in tcn_layer1:
+    for layer2 in tcn_layer2:
+            n_channels = [layer1]
+            if layer2 is not None:
+                n_channels += [layer2]
+
+            option_dicts.append({"logdir": "log/tcn_without_normalization_2", "cuda": True,
+                                 "dataset": "silverbox", "model": "tcn",
+                                 "normalize": True, "normalize_n_std": 1,
+                                 "train_options": {"batch_size": 4, "lr_scheduler_factor": 2},
+                                 "model_options": {'dilation_sizes': [1]*len(n_channels),
+                                                   'dropout': 0.0,
+                                                   'ksize': 2,
+                                                   "n_channels": n_channels}
+                                 }
+                                )
 
 num_processes = 8
 processes = []
