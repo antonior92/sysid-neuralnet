@@ -96,7 +96,6 @@ default_options = {
     'logdir': None,
     'run_name': None,
     'load_model': None,
-    'evaluate_model': False,
     'normalize': False,
     'normalize_n_std': 1,
     'train_options': default_options_train,
@@ -120,6 +119,9 @@ default_options = {
 
 def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
     # Stack overflow : https://stackoverflow.com/questions/7204805/dictionaries-of-dictionaries-merge/7205107#7205107
+
+    deprecated_options = ["evaluate_model"]
+
     if path is None:
         path = []
     for key in new_dict:
@@ -136,6 +138,8 @@ def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
         else:
             if allow_new:
                 default_dict[key] = new_dict[key]
+            elif key in deprecated_options:
+                print("Key: " + key + " is deprecated")
             else:
                 raise Exception('Default value not found at %s' % '.'.join(path + [str(key)]))
     return default_dict
@@ -232,20 +236,21 @@ def create_full_options_dict(*option_dicts):
     # Clear away unused fields and merge model options
     options = clean_options(merged_options)
 
-    ctime = time.strftime("%c")
-
-    if options["logdir"] is None:
-        options["logdir"] = "log"
-
-    if options["run_name"] is None:
-        if options["evaluate_model"]:
-            options["run_name"] = "eval_"+ctime
-        else:
-            options["run_name"] = "train_"+ctime
-
-    options["logdir"] = os.path.join(options["logdir"], options["run_name"])
-
     return options
+
+
+def get_run_path(options, ctime):
+    logdir = options.get("logdir", None)
+    run_name = options.get("run_name", None)
+
+    if run_name is None:
+        run_name = "train_" + ctime
+
+    if logdir is None:
+        logdir = "log"
+
+    run_path = os.path.join(logdir, run_name)
+    return run_path
 
 
 def compute_normalizers(loader_train, variance_scaler):
@@ -272,18 +277,19 @@ def compute_normalizers(loader_train, variance_scaler):
 
 
 def run(options=None, load_model=None, mode_interactive=True):
+    if options is None:
+        options = {}
 
     if not mode_interactive:
+        ctime = time.strftime("%c")
+        run_path = get_run_path(options, ctime)
         # Create folder
-        os.makedirs(options["logdir"], exist_ok=True)
+        os.makedirs(run_path, exist_ok=True)
         # Set stdout to print to file and console
-        set_redirects(options["logdir"])
+        set_redirects(run_path)
 
     if load_model is not None:
         ckpt_options = create_full_options_dict(os.path.join(os.path.dirname(load_model), 'options.txt'))
-
-        if options is None:
-            options = {}
 
         options["model"] = ckpt_options["model"]
         options["dataset"] = ckpt_options["dataset"]
@@ -331,7 +337,9 @@ def run(options=None, load_model=None, mode_interactive=True):
         current_epoch = 0
 
     if not mode_interactive:
-        with open(os.path.join(options["logdir"], "options.txt"), "w+") as f:
+        print("Training starting at: "+ctime)
+
+        with open(os.path.join(run_path, "options.txt"), "w+") as f:
             f.write(json.dumps(options, indent=1))
             print(json.dumps(options, indent=1))
 
@@ -339,7 +347,7 @@ def run(options=None, load_model=None, mode_interactive=True):
         train.run_train(start_epoch=current_epoch,
                         cuda=options["cuda"],
                         modelstate=modelstate,
-                        logdir=options["logdir"],
+                        logdir=run_path,
                         loader_train=loaders["train"],
                         loader_valid=loaders["valid"],
                         train_options=options["train_options"])
