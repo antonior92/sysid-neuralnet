@@ -65,11 +65,9 @@ default_options_silverbox = {'seq_len_train': 2048,
                              'train_split': None,
                              'shuffle_seed': None}
 
-
 default_options_f16gvt = {'seq_len_train': 2048,
                           'seq_len_val': 2048,
                           'seq_len_test': None}
-
 
 default_options_train = {
         'init_lr': 0.001,
@@ -161,8 +159,8 @@ def clean_options(options):
             del options[key]
 
     # Specify used dataset and model options
-    options["dataset_options"] = recursive_merge(dataset_options, options["dataset_options"], allow_new=True)
-    options["model_options"] = recursive_merge(model_options, options["model_options"], allow_new=True)
+    options["dataset_options"] = recursive_merge(dataset_options, options["dataset_options"])
+    options["model_options"] = recursive_merge(model_options, options["model_options"])
     return options
 
 
@@ -298,8 +296,8 @@ def run(options=None, load_model=None, mode_interactive=True):
         options["normalize_n_std"] = ckpt_options["normalize_n_std"]
 
         options = recursive_merge(ckpt_options, options)
-    elif options is None:
-        options = create_full_options_dict()  # Default values
+    else:
+        options = create_full_options_dict(options)  # Fill with default values
 
     # Specifying datasets
     loaders = loader.load_dataset(dataset=options["dataset"],
