@@ -60,8 +60,6 @@ class CausalConv(DynamicModule):
             self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
                                   groups=groups, bias=bias)
         self.requested_output = None
-        self.weight = self.conv.weight
-        self.bias = self.conv.bias
 
     def set_requested_output(self, requested_output):
         self.requested_output = requested_output
