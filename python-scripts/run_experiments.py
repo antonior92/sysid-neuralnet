@@ -31,16 +31,18 @@ batchsize_list = [1*2**i for i in range(6)]
 
 for max_past_input in mlp_max_past_input_list:
     for hidden_size in mlp_hidden_size_list:
-        for normalizaiton in [True,False]:
+        for normalizaiton in [True, False]:
+            for activation_fn in ["relu", "sigmoid"]:
 
-            option_dicts.append({"logdir": "log/mlp_norm_test", "cuda": True,
-                                 "dataset": "silverbox", "model": "mlp",
-                                 "normalize": normalizaiton, "normalize_n_std": 1,
-                                 "train_options": {"batch_size": 4, "lr_scheduler_factor": 2},
-                                 "model_options": {'max_past_input': max_past_input,
-                                                   'hidden_size': hidden_size}
-                                 }
-                                )
+                option_dicts.append({"logdir": "log/mlp_norm_test", "cuda": True,
+                                     "dataset": "silverbox", "model": "mlp",
+                                     "normalize": normalizaiton, "normalize_n_std": 1,
+                                     "train_options": {"batch_size": 4, "lr_scheduler_factor": 2},
+                                     "model_options": {'max_past_input': max_past_input,
+                                                       'hidden_size': hidden_size,
+                                                       "activation_fn": 'relu'}
+                                     }
+                                    )
 
 num_processes = 8
 processes = []
