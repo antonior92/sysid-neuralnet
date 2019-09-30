@@ -65,6 +65,12 @@ default_options_silverbox = {'seq_len_train': 2048,
                              'train_split': None,
                              'shuffle_seed': None}
 
+default_options_silverbox_schroeder = {'seq_len_train': 2048,
+                                       'seq_len_val': 2048,
+                                       'seq_len_test': None,
+                                       'train_split': None,
+                                       'shuffle_seed': None}
+
 default_options_f16gvt = {'seq_len_train': 2048,
                           'seq_len_val': 2048,
                           'seq_len_test': None}
@@ -106,6 +112,7 @@ default_options = {
     'dataset_options': {},
     'chen_options': default_options_chen,
     'silverbox_options': default_options_silverbox,
+    'silverbox_schroeder_options': default_options_silverbox_schroeder,
     'f16gvt_options': default_options_f16gvt,
 
     'model': 'tcn',
@@ -147,7 +154,7 @@ def recursive_merge(default_dict, new_dict, path=None, allow_new=False):
 
 def clean_options(options):
     # Remove unused options
-    datasets = ["chen", 'silverbox', 'f16gvt']
+    datasets = ["chen", 'silverbox', 'f16gvt', 'silverbox_schroeder']
     if options["dataset"] not in datasets:
         raise Exception("Unknown dataset: " + options["dataset"])
     dataset_options = options[options["dataset"] + "_options"]
