@@ -38,18 +38,19 @@ num_processes = 1
 processes = []
 while len(option_dicts) > 0:
     opt_dict = option_dicts.pop()
-    new_p = Process(target=sub_run, args=(opt_dict,))
-    processes.append(new_p)
-    new_p.start()
-    time.sleep(1)
-    while len(processes) >= num_processes:
-        for p in processes:
-            if not p.is_alive():
-                p.join()
-                processes.remove(p)
-                break
-        time.sleep(1)
+    sub_run(opt_dict)
+    # new_p = Process(target=sub_run, args=(opt_dict,))
+    # processes.append(new_p)
+    # new_p.start()
+    # time.sleep(1)
+    # while len(processes) >= num_processes:
+    #     for p in processes:
+    #         if not p.is_alive():
+    #             p.join()
+    #             processes.remove(p)
+    #             break
+    #     time.sleep(1)
 
 # Join the last processes
-for p in processes:
-    p.join()
+#for p in processes:
+#    p.join()
