@@ -3,10 +3,10 @@ import torch
 import run
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import show_fig
+from utils import show_fig, compute_fit
 
 (model, loader, options) = run.run({"cuda": False},
-                                   load_model="log/chen/tcn_2/train_Sat Mar  9 02:50:38 2019/best_model.pt")
+                                   load_model="log\\lstm\\train_Tue Oct  1 13_00_37 2019/best_model.pt")
 
 model.cpu()
 model.set_mode('one-step-ahead')
@@ -38,5 +38,9 @@ show_fig(fig)
 
 rf = model.m.get_requested_input(1)
 print(np.sqrt(np.mean(np.square(all_output[rf:] - all_y[rf:]))))
+
+print("hidden_size: ", options['model_options']['hidden_size'])
+print("num_layers: ", options['model_options']['num_layers'])
+print("fit: ", compute_fit(all_y[0, 0], all_output[0, 0]))
 
 
