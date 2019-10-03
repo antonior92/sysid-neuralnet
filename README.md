@@ -1,6 +1,8 @@
 # sysid-neuralnet
 Deep neural networks for system identification problems.
 
+**NOTE**: This code implement the examples of the paper: ``Deep  Convolutional  Networks  in  System  Identification``. Better documentation and more readable code structure is a working in progress...
+
 # Interactive mode
 The code is possible to run in  interactive mode mainly to enable easy access to evaluation 
 

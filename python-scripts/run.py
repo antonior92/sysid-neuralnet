@@ -288,7 +288,7 @@ def run(options=None, load_model=None, mode_interactive=True):
         options = {}
 
     if not mode_interactive:
-        ctime = time.strftime("%c")
+        ctime = time.strftime("%c").replace(":", "_")
         run_path = get_run_path(options, ctime)
         # Create folder
         os.makedirs(run_path, exist_ok=True)

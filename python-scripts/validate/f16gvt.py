@@ -35,8 +35,28 @@ mins = []
 logdir = []
 for i, m in enumerate(models):
     aux = results[(results['model'] == m)]
-    mins += [aux.ix[aux["vloss"].idxmin()]["vloss"]]
-    logdir += [aux.ix[aux["vloss"].idxmin()]["logdir"]]
+    entry = aux.ix[aux["vloss"].idxmin()]
+    mins += [entry["vloss"]]
+    logdir += [entry["logdir"]]
+
+    if m == 'mlp':
+        print('MLP')
+        print('activ. fun =', entry['model_options_activation_fn'])
+        print('n = ', int(entry['model_options_max_past_input']))
+        print('h. size', int(entry['model_options_hidden_size']))
+    elif m == 'tcn':
+        print('TCN')
+        print('n layers', int(entry['model_options_n_channels_len']))
+        print('h size', int(entry['model_options_n_channels_0']))
+        print('k size', int(entry['model_options_ksize']))
+        print('norm', entry['model_options_normalization'] if isinstance(entry['model_options_normalization'], str) else 'none')
+        print('d', int(entry['model_options_dilation_sizes_1'] if not np.isnan(entry['model_options_dilation_sizes_1']) else 1))
+        print('dropout', entry['model_options_dropout'])
+    elif m == 'lstm':
+        print('LSTM')
+        print('h size', int(entry['model_options_hidden_size']))
+        print('n layers', int(entry['model_options_num_layers']))
+        print('dropout', entry['model_options_dropout'])
 
 
 df = pd.DataFrame(np.reshape(mins, (1, 3)), columns=models, index=[0])

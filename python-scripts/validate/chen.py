@@ -27,8 +27,10 @@ results_lstm = results[results['model'] == 'lstm']
 models = ['mlp', 'tcn', 'lstm']
 noise_levels = [0, 0.3, 0.6]
 n_batches = [5, 20, 80]
+n_hyperparameters = [3, 3, 3]
 
 mins = np.zeros([3, 3, 3])
+hyperparameters = {m: np.zeros([n_hyperparameters[i], 3, 3], dtype=object) for i, m in enumerate(models)}
 
 for i, m in enumerate(models):
     for j, sd_v in enumerate(noise_levels):
@@ -40,6 +42,7 @@ for i, m in enumerate(models):
 
             mins[i, j, k] = entry["rmse"]
 
+
 mins_da = xr.DataArray(mins,
                        coords={'model': models,
                                'noise_levels': noise_levels,
@@ -50,6 +53,48 @@ mins_df = mins_da.to_dataframe('i').unstack().swaplevel(axis=0).unstack().sort_i
 print(mins_df)
 mins_df.to_csv('optimal_models_chen.csv', float_format='%.3f')
 
+
+# Hyperparameters mlp
+hyperparameters_mlp = xr.DataArray(hyperparameters['mlp'],
+                                   coords={'hyperparam': ['activation fun',
+                                                          'model order',
+                                                          'hidden size'],
+                                           'noise_levels': noise_levels,
+                                           'n_batches': n_batches},
+                                  dims=['hyperparam', 'noise_levels', 'n_batches'])
+hyperparameters_mlp_df \
+    = hyperparameters_mlp.to_dataframe('i').unstack().swaplevel(axis=0).unstack().sort_index(level=0)
+hyperparameters_mlp_df.to_csv('hyperparam_mlp_chen.csv', float_format='%.3f')
+
+
+# Hyperparameters tcn
+hyperparameters_tcn = xr.DataArray(hyperparameters['tcn'],
+                                   coords={'hyperparam': ['hidden size',
+                                                          'n layers',
+                                                          #'kernel size',
+                                                          #'normalization',
+                                                          #'dilation',
+                                                          'dropout'],
+                                           'noise_levels': noise_levels,
+                                           'n_batches': n_batches},
+                                  dims=['hyperparam', 'noise_levels', 'n_batches'])
+hyperparameters_tcn_df \
+    = hyperparameters_tcn.to_dataframe('i').unstack().swaplevel(axis=0).unstack().sort_index(level=0)
+
+hyperparameters_tcn_df.to_csv('hyperparam_tcn_chen.csv', float_format='%.3f')
+
+# Hyperparameters lstm
+hyperparameters_lstm = xr.DataArray(hyperparameters['lstm'],
+                                   coords={'hyperparam': ['hidden size',
+                                                          'n layers',
+                                                          'dropout'],
+                                           'noise_levels': noise_levels,
+                                           'n_batches': n_batches},
+                                  dims=['hyperparam', 'noise_levels', 'n_batches'])
+hyperparameters_lstm_df \
+    = hyperparameters_lstm.to_dataframe('i').unstack().swaplevel(axis=0).unstack().sort_index(level=0)
+
+hyperparameters_lstm_df.to_csv('hyperparam_lstm_chen.csv', float_format='%.3f')
 
 # %% (TCN) Dropout effect (global)
 
