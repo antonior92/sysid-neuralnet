@@ -14,22 +14,25 @@ option_dicts = []
 # LSTM
 io_delay = 0
 logdir = "log/silverbox_schroeder/lstm"
-hidden_size_list = [16, 32, 64, 128]
-num_layers_list = [1, 2]
+hidden_size_list = [2,4,6,8]
+
+train_lens = [128,256,512]
+batch_sizes = [1,2,4]
+
 dropout_list = [0]
-for num_layers in num_layers_list:
-    for hidden_size in hidden_size_list:
-        for dropout in dropout_list:
+for hidden_size in hidden_size_list:
+    for train_len in train_lens:
+        for batch_size in batch_sizes:
             option_dicts.append({"logdir": logdir,
                                  "cuda": False,
                                  "dataset": "silverbox_schroeder",
                                  "model": "lstm",
-                                 "train_options": {"batch_size": 2},
+                                 "train_options": {"batch_size": batch_size},
                                  "model_options": {'hidden_size': hidden_size,
                                                    'io_delay': io_delay,
-                                                   'num_layers': num_layers,
-                                                   'dropout': dropout},
-                                 "dataset_options": {'seq_len_train': 2048,
+                                                   'num_layers': 1,
+                                                   'dropout': 0},
+                                 "dataset_options": {'seq_len_train': train_len,
                                                      'seq_len_val': 2048,
                                                      'seq_len_test': None}}
                                 )
